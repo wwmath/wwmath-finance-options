@@ -1,0 +1,56 @@
+# QuantLib as an independent test oracle.
+#
+# The Math ASTs are transcribed from the papers, not from QuantLib. QuantLib is
+# used only to check them: an [[checks]] entry with kind = "oracle" evaluates our
+# formula and the QuantLib function on the same inputs and compares the two.
+#
+# Oracle calls go through the QuantLib Python bindings (`pip install QuantLib`).
+# The file/line references are from the C++ source at the commit below, so a
+# reviewer can read the exact code being compared against.
+
+[source]
+repository = "https://github.com/lballabio/QuantLib"
+commit = "0191ca7cccbb62e538fd10f5c88f640594d4eaed"
+commit_date = "2026-09-25"
+python_bindings = "QuantLib 1.43 (PyPI)"
+license = "QuantLib license (modified BSD)"
+
+[[oracles]]
+id = "ql.blackFormula"
+adapter = "black_formula"
+function = "QuantLib::blackFormula(Option::Type, Real strike, Real forward, Real stdDev, Real discount, Real displacement)"
+files = ["ql/pricingengines/blackformula.hpp", "ql/pricingengines/blackformula.cpp:59"]
+compares = ["black1976.call", "black1976.put"]
+notes = "d1 = ln(F/K)/stdDev + stdDev/2 with stdDev = s sqrt(t): Black's d1 rearranged. BlackCalculator (blackcalculator.hpp/.cpp) wraps the same formula with Greeks and state."
+
+[[oracles]]
+id = "ql.bachelierBlackFormula"
+adapter = "bachelier_formula"
+function = "QuantLib::bachelierBlackFormula(Option::Type, Real strike, Real forward, Real stdDev, Real discount)"
+files = ["ql/pricingengines/blackformula.hpp", "ql/pricingengines/blackformula.cpp:705"]
+compares = ["bachelier1900.call", "bachelier1900.put"]
+notes = "discount * (stdDev * phi'(h) + d * Phi(h)), d = (F - K) * sign, h = d / stdDev."
+
+[[oracles]]
+id = "ql.sabrVolatility"
+adapter = "sabr_volatility"
+function = "QuantLib::unsafeSabrLogNormalVolatility(Rate strike, Rate forward, Time expiryTime, Real alpha, Real beta, Real nu, Real rho)"
+files = ["ql/termstructures/volatility/sabr.hpp", "ql/termstructures/volatility/sabr.cpp:37"]
+compares = ["hagan2002.sigma_B"]
+notes = "Term-for-term Hagan et al. (2.17a-c); near the money it switches to the series z/x(z) ~ 1 - rho z/2 - (3 rho^2 - 2) z^2/12. sabrVolatility() validates the parameters and calls it."
+
+[[oracles]]
+id = "ql.AnalyticHestonEngine"
+adapter = "heston_call"
+function = "QuantLib::AnalyticHestonEngine (HestonModel, HestonProcess) on a European call"
+files = ["ql/pricingengines/vanilla/analytichestonengine.hpp", "ql/pricingengines/vanilla/analytichestonengine.cpp:780", "ql/models/equity/hestonmodel.hpp", "ql/processes/hestonprocess.hpp"]
+compares = ["heston1993.call"]
+notes = "Heston (1993) with lambda = 0 (QuantLib's parameters are risk-neutral). Adaptive Gauss-Lobatto integration, relative tolerance 1e-12."
+
+[[oracles]]
+id = "ql.BatesEngine"
+adapter = "bates_call"
+function = "QuantLib::BatesEngine (BatesModel, BatesProcess) on a European call"
+files = ["ql/pricingengines/vanilla/batesengine.hpp", "ql/pricingengines/vanilla/batesengine.cpp:39", "ql/models/equity/batesmodel.hpp", "ql/processes/batesprocess.cpp:37"]
+compares = ["bates1996.call"]
+notes = "QuantLib parameterises the log jump J ~ N(nu, delta^2) with compensator m = exp(nu + delta^2/2) - 1. Bates' ln(1+k) ~ N(ln(1+kbar*) - delta^2/2, delta^2) therefore maps to nu = ln(1 + kbar*) - delta^2/2 and m = kbar*."

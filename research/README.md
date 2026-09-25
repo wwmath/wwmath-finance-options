@@ -108,6 +108,38 @@ Run `python tools/validate.py`. It needs numpy, scipy, sympy and gfortran.
   → gfortran → run, and must reproduce the Python reference interpreter.
   32 programs are generated; the sources are in `generated/f77/`.
 
+## QuantLib as an independent oracle
+
+`references/quantlib.toml` pins the QuantLib commit (`0191ca7`, 2026-09-25) and
+the Python bindings (1.43). It records the C++ file, line and function for each
+comparison. Checks with `kind = "oracle"` evaluate our AST formula, and its F77
+build, next to the QuantLib function on a grid of cases. QuantLib is only a
+test oracle; the ASTs stay sourced from the papers.
+
+| our formula | QuantLib | cases | max rel. diff |
+|---|---|---|---|
+| `black1976.call` / `.put` | `blackFormula` (`ql/pricingengines/blackformula.cpp:59`) | 9 + 9 | 3e-13 |
+| `bachelier1900.call` / `.put` | `bachelierBlackFormula` (`blackformula.cpp:705`) | 6 + 6 | 4e-12 |
+| `hagan2002.sigma_B` (2.17) | `unsafeSabrLogNormalVolatility` (`ql/termstructures/volatility/sabr.cpp:37`) | 48 | 9e-16 |
+| `heston1993.call_trap` | `AnalyticHestonEngine` | 27 | 3e-11 |
+| `heston1993.call` (eq. 17 as printed) | `AnalyticHestonEngine` | 24 | 3e-11 |
+| `bates1996.call` | `BatesEngine` (`batesengine.cpp:39`) | 18 | 6e-14 |
+
+**Finding: the "little Heston trap".** Heston's eq. (17) is transcribed
+verbatim, and it takes a principal-branch complex log. At κ = 1.5, σ = 0.3,
+ρ = −0.7, τ = 2, the log's argument crosses the branch cut near φ ≈ 22. The
+printed formula then misprices by up to 0.8% (13.733 vs 13.797 at the money).
+`heston1993.call_trap`, which uses the Albrecher et al. (2007) form, matches
+QuantLib to 1e-13 there. Use `call_trap` for pricing. The `little-heston-trap-finding`
+check pins the size of the discrepancy, so a regression in either form shows up.
+
+The Bates mapping: QuantLib's log jump `J ~ N(ν, δ²)` gives
+`ν = ln(1 + k̄*) − δ²/2` in Bates' notation.
+
+The SABR function here is (2.17) as printed, so it is undefined (0/0) at exactly
+K = f. QuantLib switches to a series near the money; we keep (2.18) as the
+separate ATM formula.
+
 ## FORTRAN 77 backend (`tools/f77.py`)
 
 * Each definition becomes one temporary, so shared subexpressions are computed

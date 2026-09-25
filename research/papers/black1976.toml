@@ -473,3 +473,77 @@ paths = 200000
 steps = 200
 seed = 2
 abs_tol = 0.02
+
+[[checks]]
+id = "quantlib-blackFormula-call"
+kind = "oracle"
+oracle = "ql.blackFormula"
+description = "black1976.call vs QuantLib blackFormula (call)"
+target = "black1976.call"
+oracle_args = { strike = '''
+{"op": "Symbol", "name": "cstar"}
+''', forward = '''
+{"op": "Symbol", "name": "F"}
+''', stdDev = '''
+{
+  "op": "Mul",
+  "args": [
+    {"op": "Symbol", "name": "s"},
+    {"op": "Sqrt", "args": [{"op": "Symbol", "name": "t"}]}
+  ]
+}
+''', discount = '''
+{
+  "op": "Call",
+  "fn": "exp",
+  "args": [
+    {
+      "op": "Mul",
+      "args": [
+        {"op": "Neg", "args": [{"op": "Symbol", "name": "r"}]},
+        {"op": "Symbol", "name": "t"}
+      ]
+    }
+  ]
+}
+''', type = "call" }
+cases = [{ F = 100.0, cstar = 60.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 80.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 95.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 100.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 105.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 120.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 160.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 0.035, cstar = 0.03, s = 0.4, t = 10.0, r = 0.02 }, { F = 50.0, cstar = 55.0, s = 0.05, t = 0.02, r = 0.0 }]
+rel_tol = 1e-12
+abs_tol = 1e-14
+
+[[checks]]
+id = "quantlib-blackFormula-put"
+kind = "oracle"
+oracle = "ql.blackFormula"
+description = "black1976.put vs QuantLib blackFormula (put)"
+target = "black1976.put"
+oracle_args = { strike = '''
+{"op": "Symbol", "name": "cstar"}
+''', forward = '''
+{"op": "Symbol", "name": "F"}
+''', stdDev = '''
+{
+  "op": "Mul",
+  "args": [
+    {"op": "Symbol", "name": "s"},
+    {"op": "Sqrt", "args": [{"op": "Symbol", "name": "t"}]}
+  ]
+}
+''', discount = '''
+{
+  "op": "Call",
+  "fn": "exp",
+  "args": [
+    {
+      "op": "Mul",
+      "args": [
+        {"op": "Neg", "args": [{"op": "Symbol", "name": "r"}]},
+        {"op": "Symbol", "name": "t"}
+      ]
+    }
+  ]
+}
+''', type = "put" }
+cases = [{ F = 100.0, cstar = 60.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 80.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 95.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 100.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 105.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 120.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 100.0, cstar = 160.0, s = 0.25, t = 1.0, r = 0.03 }, { F = 0.035, cstar = 0.03, s = 0.4, t = 10.0, r = 0.02 }, { F = 50.0, cstar = 55.0, s = 0.05, t = 0.02, r = 0.0 }]
+rel_tol = 1e-12
+abs_tol = 1e-14

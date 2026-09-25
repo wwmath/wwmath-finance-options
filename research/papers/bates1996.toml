@@ -1260,3 +1260,67 @@ paths = 200000
 steps = 250
 seed = 4
 abs_tol = 0.03
+
+[[checks]]
+id = "quantlib-BatesEngine"
+kind = "oracle"
+oracle = "ql.BatesEngine"
+description = "bates1996.call vs QuantLib BatesEngine, 3 jump regimes x 2 maturities x 3 strikes"
+target = "bates1996.call"
+oracle_args = { s0 = '''
+{"op": "Symbol", "name": "S"}
+''', v0 = '''
+{"op": "Symbol", "name": "V"}
+''', kappa = '''
+{"op": "Symbol", "name": "betastar"}
+''', theta = '''
+{
+  "op": "Div",
+  "args": [{"op": "Symbol", "name": "alpha"}, {"op": "Symbol", "name": "betastar"}]
+}
+''', sigma = '''
+{"op": "Symbol", "name": "sigma_v"}
+''', rho = '''
+{"op": "Symbol", "name": "rho"}
+''', r = '''
+{"op": "Symbol", "name": "r"}
+''', q = '''
+{"op": "Sub", "args": [{"op": "Symbol", "name": "r"}, {"op": "Symbol", "name": "b"}]}
+''', lambda = '''
+{"op": "Symbol", "name": "lambdastar"}
+''', nu = '''
+{
+  "op": "Sub",
+  "args": [
+    {
+      "op": "Call",
+      "fn": "log",
+      "args": [
+        {
+          "op": "Add",
+          "args": [{"op": "Number", "value": 1}, {"op": "Symbol", "name": "kbarstar"}]
+        }
+      ]
+    },
+    {
+      "op": "Div",
+      "args": [
+        {
+          "op": "Pow",
+          "args": [{"op": "Symbol", "name": "delta"}, {"op": "Number", "value": 2}]
+        },
+        {"op": "Number", "value": 2}
+      ]
+    }
+  ]
+}
+''', delta = '''
+{"op": "Symbol", "name": "delta"}
+''', strike = '''
+{"op": "Symbol", "name": "X"}
+''', T = '''
+{"op": "Symbol", "name": "T"}
+''' }
+cases = [{ S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 85.0, lambdastar = 0.5, kbarstar = -0.1, delta = 0.15, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 100.0, lambdastar = 0.5, kbarstar = -0.1, delta = 0.15, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 115.0, lambdastar = 0.5, kbarstar = -0.1, delta = 0.15, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 85.0, lambdastar = 0.5, kbarstar = -0.1, delta = 0.15, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 100.0, lambdastar = 0.5, kbarstar = -0.1, delta = 0.15, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 115.0, lambdastar = 0.5, kbarstar = -0.1, delta = 0.15, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 85.0, lambdastar = 2.0, kbarstar = 0.02, delta = 0.05, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 100.0, lambdastar = 2.0, kbarstar = 0.02, delta = 0.05, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 115.0, lambdastar = 2.0, kbarstar = 0.02, delta = 0.05, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 85.0, lambdastar = 2.0, kbarstar = 0.02, delta = 0.05, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 100.0, lambdastar = 2.0, kbarstar = 0.02, delta = 0.05, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 115.0, lambdastar = 2.0, kbarstar = 0.02, delta = 0.05, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 85.0, lambdastar = 0.1, kbarstar = -0.3, delta = 0.4, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 100.0, lambdastar = 0.1, kbarstar = -0.3, delta = 0.4, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 0.2, b = 0.01, r = 0.03, X = 115.0, lambdastar = 0.1, kbarstar = -0.3, delta = 0.4, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 85.0, lambdastar = 0.1, kbarstar = -0.3, delta = 0.4, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 100.0, lambdastar = 0.1, kbarstar = -0.3, delta = 0.4, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }, { S = 100.0, V = 0.04, T = 1.0, b = 0.01, r = 0.03, X = 115.0, lambdastar = 0.1, kbarstar = -0.3, delta = 0.4, alpha = 0.06, betastar = 1.5, sigma_v = 0.4, rho = -0.6 }]
+rel_tol = 1e-07
+abs_tol = 1e-08

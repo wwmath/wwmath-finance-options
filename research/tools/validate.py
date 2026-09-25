@@ -169,6 +169,11 @@ def run_numeric(lib: Library, p: Paper, check: dict, fr: F77Runner) -> tuple[boo
     else:
         aside = side(lib, p, check, "against")
         aval = float(evaluate_real(aside[1], env, aside[0].ctx))
+    if "expect_difference" in check:        # a documented, bounded discrepancy
+        lo, hi = check["expect_difference"]
+        ok = lo <= abs(tval - aval) <= hi
+        return ok, (f"target={tval:.10g} against={aval:.10g} |diff|={abs(tval - aval):.4f} "
+                    f"(expected in [{lo}, {hi}])")
     ok = close(tval, aval, check)
     msg = f"target={tval:.12g} against={aval:.12g}"
     if fr.enabled:
@@ -186,6 +191,55 @@ def run_numeric(lib: Library, p: Paper, check: dict, fr: F77Runner) -> tuple[boo
             msg += f" against={fa:.12g}"
         msg += " (agrees with reference)" if f_ok else " (MISMATCH vs reference)"
         ok = ok and f_ok and close(ft, fa if aside is not None else aval, check)
+    return ok, msg
+
+
+# ---------------------------------------------------------------------------
+# External oracles (QuantLib)
+# ---------------------------------------------------------------------------
+
+def load_oracles() -> dict:
+    with open(os.path.join(ROOT, "references", "quantlib.toml"), "rb") as fh:
+        return {o["id"]: o for o in tomllib.load(fh)["oracles"]}
+
+
+def run_oracle(lib: Library, p: Paper, check: dict, fr: F77Runner) -> tuple[bool, str]:
+    try:
+        import quantlib_oracle
+    except ImportError:
+        return True, "SKIPPED: QuantLib Python bindings not installed (pip install QuantLib)"
+    oracle = load_oracles()[check["oracle"]]
+    adapter = quantlib_oracle.ADAPTERS[oracle["adapter"]]
+    tq, tnode = lib.formula(check["target"])
+    prog = None
+    worst_rel, worst_f77, ok = 0.0, 0.0, True
+    for i, case in enumerate(check.get("cases", [{}])):
+        c = dict(check, inputs={**check.get("inputs", {}), **case})
+        env = build_env(lib, p, c)
+        ours = float(evaluate_real(tnode, env, tq.ctx))
+        args = {}
+        for name, spec in check["oracle_args"].items():
+            args[name] = (float(evaluate_real(parse_ast(spec), env, p.ctx))
+                          if spec.strip().startswith("{") else spec)
+        theirs = float(adapter(args))
+        rel = abs(ours - theirs) / max(abs(theirs), 1e-300)
+        worst_rel = max(worst_rel, rel)
+        ok &= close(ours, theirs, check)
+        if fr.enabled:
+            if prog is None:
+                inputs = f77.required_inputs(tnode, tq.defs)
+                prog = (inputs, f77.compile_formula(tnode, tq.defs, inputs,
+                                                   f"{p.id}/{check['id']}", fr.build))
+                dest = os.path.join(GEN, "f77", p.id)
+                os.makedirs(dest, exist_ok=True)
+                shutil.copy(prog[1].src_path, os.path.join(dest, check["id"] + "-target.f"))
+                fr.count += 1
+            fv = prog[1](env)
+            worst_f77 = max(worst_f77, abs(fv - theirs) / max(abs(theirs), 1e-300))
+            ok &= close(fv, theirs, check)
+    n = len(check.get("cases", [{}]))
+    msg = (f"{n} case(s) vs {oracle['function'].split('(')[0]}: max rel diff {worst_rel:.1e}"
+           + (f"; F77 build max rel diff {worst_f77:.1e}" if fr.enabled else ""))
     return ok, msg
 
 
@@ -397,6 +451,8 @@ def main() -> int:
                     if args.no_mc:
                         continue
                     ok, msg = run_monte_carlo(lib, p, check)
+                elif kind == "oracle":
+                    ok, msg = run_oracle(lib, p, check, fr)
                 elif kind == "sympy_identity":
                     ok, msg = run_sympy_identity(lib, p, check)
                 elif kind == "implied_vol":

@@ -815,3 +815,27 @@ paths = 200000
 steps = 250
 seed = 5
 abs_tol = 0.05
+
+[[checks]]
+id = "quantlib-sabrVolatility"
+kind = "oracle"
+oracle = "ql.sabrVolatility"
+description = "(2.17) vs QuantLib unsafeSabrLogNormalVolatility, beta in {0, .5, .7, 1}, moneyness 0.5-2, two (rho, nu, T) sets"
+target = "hagan2002.sigma_B"
+oracle_args = { strike = '''
+{"op": "Symbol", "name": "K"}
+''', forward = '''
+{"op": "Symbol", "name": "f"}
+''', expiryTime = '''
+{"op": "Symbol", "name": "t_ex"}
+''', alpha = '''
+{"op": "Symbol", "name": "alpha"}
+''', beta = '''
+{"op": "Symbol", "name": "beta"}
+''', nu = '''
+{"op": "Symbol", "name": "nu"}
+''', rho = '''
+{"op": "Symbol", "name": "rho"}
+''' }
+cases = [{ f = 0.03, K = 0.015, alpha = 0.0035, beta = 0.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.015, alpha = 0.0035, beta = 0.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.024, alpha = 0.0035, beta = 0.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.024, alpha = 0.0035, beta = 0.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.028499999999999998, alpha = 0.0035, beta = 0.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.028499999999999998, alpha = 0.0035, beta = 0.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.0315, alpha = 0.0035, beta = 0.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.0315, alpha = 0.0035, beta = 0.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.039, alpha = 0.0035, beta = 0.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.039, alpha = 0.0035, beta = 0.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.06, alpha = 0.0035, beta = 0.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.06, alpha = 0.0035, beta = 0.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.015, alpha = 0.035, beta = 0.5, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.015, alpha = 0.035, beta = 0.5, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.024, alpha = 0.035, beta = 0.5, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.024, alpha = 0.035, beta = 0.5, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.028499999999999998, alpha = 0.035, beta = 0.5, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.028499999999999998, alpha = 0.035, beta = 0.5, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.0315, alpha = 0.035, beta = 0.5, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.0315, alpha = 0.035, beta = 0.5, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.039, alpha = 0.035, beta = 0.5, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.039, alpha = 0.035, beta = 0.5, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.03, K = 0.06, alpha = 0.035, beta = 0.5, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.03, K = 0.06, alpha = 0.035, beta = 0.5, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.05, K = 0.025, alpha = 0.0873, beta = 0.7, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.05, K = 0.025, alpha = 0.0873, beta = 0.7, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.05, K = 0.04000000000000001, alpha = 0.0873, beta = 0.7, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.05, K = 0.04000000000000001, alpha = 0.0873, beta = 0.7, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.05, K = 0.0475, alpha = 0.0873, beta = 0.7, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.05, K = 0.0475, alpha = 0.0873, beta = 0.7, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.05, K = 0.052500000000000005, alpha = 0.0873, beta = 0.7, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.05, K = 0.052500000000000005, alpha = 0.0873, beta = 0.7, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.05, K = 0.065, alpha = 0.0873, beta = 0.7, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.05, K = 0.065, alpha = 0.0873, beta = 0.7, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 0.05, K = 0.1, alpha = 0.0873, beta = 0.7, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 0.05, K = 0.1, alpha = 0.0873, beta = 0.7, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 100.0, K = 50.0, alpha = 0.2, beta = 1.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 100.0, K = 50.0, alpha = 0.2, beta = 1.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 100.0, K = 80.0, alpha = 0.2, beta = 1.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 100.0, K = 80.0, alpha = 0.2, beta = 1.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 100.0, K = 95.0, alpha = 0.2, beta = 1.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 100.0, K = 95.0, alpha = 0.2, beta = 1.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 100.0, K = 105.0, alpha = 0.2, beta = 1.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 100.0, K = 105.0, alpha = 0.2, beta = 1.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 100.0, K = 130.0, alpha = 0.2, beta = 1.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 100.0, K = 130.0, alpha = 0.2, beta = 1.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }, { f = 100.0, K = 200.0, alpha = 0.2, beta = 1.0, nu = 0.5, rho = -0.4, t_ex = 1.0 }, { f = 100.0, K = 200.0, alpha = 0.2, beta = 1.0, nu = 0.9, rho = 0.3, t_ex = 5.0 }]
+rel_tol = 1e-12

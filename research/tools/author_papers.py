@@ -83,8 +83,8 @@ def emit(paper: dict) -> str:
         for k, v in c.items():
             if k.endswith("_ast"):
                 out.append(f"{k} = {ml(to_json(v))}")
-            elif k == "bind":
-                out.append("bind = { " + ", ".join(
+            elif k in ("bind", "oracle_args"):
+                out.append(f"{k} = {{ " + ", ".join(
                     f"{b} = {ml(to_json(x)) if isinstance(x, dict) else q(x)}"
                     for b, x in v.items()) + " }")
             else:
@@ -361,6 +361,17 @@ def heston():
             F("heston1993.Ct_j", "C(tau; phi), little-trap form", "definition", alt[0], h(**alb)),
             F("heston1993.Dt_j", "D(tau; phi), little-trap form", "definition", alt[1], h(**alb)),
             F("heston1993.gt_j", "g, little-trap form", "definition", alt[2], h(**alb)),
+            F("heston1993.Pt_j", "In-the-money probabilities, little-trap form", "probability",
+              eq(idx("Pt", j), add(half, mul(div(1, PI), integral(
+                  Re(div(mul(exp(mul(neg(I), phi, log(K))), idx("ft", j)), mul(I, phi))),
+                  "phi", 0, INF)))), h(**alb)),
+            F("heston1993.call_trap", "European call price, branch-safe", "price",
+              eq(sym("C_trap"), sub(mul(Sx, idx("Pt", 1)), mul(K, sym("P_tT"), idx("Pt", 2)))),
+              h(**alb),
+              notes="Eq. (10) with (17) replaced by the little-trap form. Use this for pricing: "
+                    "(17) as printed takes a principal-branch complex log whose argument can cross "
+                    "the branch cut (e.g. kappa=1.5, sigma=0.3, rho=-0.7, tau=2), which moves the "
+                    "price by up to 0.8% (see the quantlib checks)."),
         ],
         "checks": [
             {"id": f"trap-form-agrees-{part}-{jj}", "kind": "compare",
@@ -982,6 +993,117 @@ def alos():
     }
 
 
+
+# ---------------------------------------------------------------------------
+# QuantLib oracle checks (research/references/quantlib.toml)
+# ---------------------------------------------------------------------------
+
+def _strike_grid(name, strikes, **fixed):
+    return [{name: k, **fixed} for k in strikes]
+
+
+def oracle_checks() -> dict[str, list[dict]]:
+    S = sym
+    black_args = {"strike": S("cstar"), "forward": S("F"), "stdDev": mul(S("s"), sqrt(S("t"))),
+                  "discount": exp(mul(neg(S("r")), S("t")))}
+    black_cases = ([{"F": 100.0, "cstar": k, "s": 0.25, "t": 1.0, "r": 0.03}
+                    for k in (60.0, 80.0, 95.0, 100.0, 105.0, 120.0, 160.0)]
+                   + [{"F": 0.035, "cstar": 0.03, "s": 0.4, "t": 10.0, "r": 0.02},
+                      {"F": 50.0, "cstar": 55.0, "s": 0.05, "t": 0.02, "r": 0.0}])
+    bach_args = {"strike": S("K"), "forward": S("F"), "stdDev": mul(S("sigma"), sqrt(S("T"))),
+                 "discount": num(1.0)}
+    bach_cases = ([{"F": 100.0, "K": k, "sigma": 12.0, "T": 0.75} for k in (70.0, 90.0, 100.0, 110.0, 140.0)]
+                  + [{"F": 0.01, "K": -0.005, "sigma": 0.008, "T": 5.0}])
+    sabr_args = {"strike": S("K"), "forward": S("f"), "expiryTime": S("t_ex"), "alpha": S("alpha"),
+                 "beta": S("beta"), "nu": S("nu"), "rho": S("rho")}
+    sabr_cases = []
+    for beta, alpha, f in ((0.0, 0.0035, 0.03), (0.5, 0.035, 0.03), (0.7, 0.0873 * 0.03 ** -0.0, 0.05),
+                           (1.0, 0.2, 100.0)):
+        for m in (0.5, 0.8, 0.95, 1.05, 1.3, 2.0):
+            for rho, nu, T in ((-0.4, 0.5, 1.0), (0.3, 0.9, 5.0)):
+                sabr_cases.append({"f": f, "K": f * m, "alpha": alpha, "beta": beta, "nu": nu,
+                                   "rho": rho, "t_ex": T})
+    heston_args = {"s0": S("S"), "v0": S("v"), "kappa": S("kappa"), "theta": S("theta"),
+                   "sigma": S("sigma"), "rho": S("rho"), "r": S("r"), "q": num(0.0),
+                   "strike": S("K"), "T": S("tau")}
+    heston_cases = []
+    for (kap, th, sg, rho, v0) in ((1.5, 0.04, 0.3, -0.7, 0.04), (3.0, 0.09, 0.8, -0.3, 0.05),
+                                   (0.5, 0.06, 0.2, 0.2, 0.03)):
+        for tau in (0.2, 1.0, 2.0):
+            for K in (80.0, 100.0, 125.0):
+                heston_cases.append({"S": 100.0, "v": v0, "kappa": kap, "theta": th, "sigma": sg,
+                                     "rho": rho, "lambda": 0.0, "r": 0.03, "K": K, "tau": tau})
+    bates_args = {"s0": S("S"), "v0": S("V"), "kappa": S("betastar"),
+                  "theta": div(S("alpha"), S("betastar")), "sigma": S("sigma_v"), "rho": S("rho"),
+                  "r": S("r"), "q": sub(S("r"), S("b")), "lambda": S("lambdastar"),
+                  "nu": sub(log(add(1, S("kbarstar"))), div(pow_(S("delta"), 2), 2)),
+                  "delta": S("delta"), "strike": S("X"), "T": S("T")}
+    bates_cases = []
+    for (lam, kb, dl) in ((0.5, -0.1, 0.15), (2.0, 0.02, 0.05), (0.1, -0.3, 0.4)):
+        for T in (0.2, 1.0):
+            for X in (85.0, 100.0, 115.0):
+                bates_cases.append({"S": 100.0, "V": 0.04, "T": T, "b": 0.01, "r": 0.03, "X": X,
+                                    "lambdastar": lam, "kbarstar": kb, "delta": dl,
+                                    "alpha": 0.06, "betastar": 1.5, "sigma_v": 0.4, "rho": -0.6})
+    return {
+        "black1976": [
+            {"id": "quantlib-blackFormula-call", "kind": "oracle", "oracle": "ql.blackFormula",
+             "description": "black1976.call vs QuantLib blackFormula (call)", "target": "black1976.call",
+             "oracle_args": {**black_args, "type": "call"}, "cases": black_cases, "rel_tol": 1e-12,
+             "abs_tol": 1e-14},
+            {"id": "quantlib-blackFormula-put", "kind": "oracle", "oracle": "ql.blackFormula",
+             "description": "black1976.put vs QuantLib blackFormula (put)", "target": "black1976.put",
+             "oracle_args": {**black_args, "type": "put"}, "cases": black_cases, "rel_tol": 1e-12,
+             "abs_tol": 1e-14},
+        ],
+        "bachelier1900": [
+            {"id": "quantlib-bachelierBlackFormula-call", "kind": "oracle",
+             "oracle": "ql.bachelierBlackFormula", "description": "bachelier1900.call vs QuantLib",
+             "target": "bachelier1900.call", "oracle_args": {**bach_args, "type": "call"},
+             "cases": bach_cases, "rel_tol": 1e-12, "abs_tol": 1e-14},
+            {"id": "quantlib-bachelierBlackFormula-put", "kind": "oracle",
+             "oracle": "ql.bachelierBlackFormula", "description": "bachelier1900.put vs QuantLib",
+             "target": "bachelier1900.put", "oracle_args": {**bach_args, "type": "put"},
+             "cases": bach_cases, "rel_tol": 1e-12, "abs_tol": 1e-14},
+        ],
+        "hagan2002": [
+            {"id": "quantlib-sabrVolatility", "kind": "oracle", "oracle": "ql.sabrVolatility",
+             "description": "(2.17) vs QuantLib unsafeSabrLogNormalVolatility, beta in {0, .5, .7, 1}, "
+                            "moneyness 0.5-2, two (rho, nu, T) sets",
+             "target": "hagan2002.sigma_B", "oracle_args": sabr_args, "cases": sabr_cases,
+             "rel_tol": 1e-12},
+        ],
+        "heston1993": [
+            {"id": "quantlib-AnalyticHestonEngine-trap", "kind": "oracle",
+             "oracle": "ql.AnalyticHestonEngine",
+             "description": "Branch-safe call vs QuantLib AnalyticHestonEngine, 3 parameter sets x "
+                            "3 maturities x 3 strikes", "target": "heston1993.call_trap",
+             "oracle_args": heston_args, "cases": heston_cases, "rel_tol": 1e-10, "abs_tol": 1e-10},
+            {"id": "quantlib-AnalyticHestonEngine-original", "kind": "oracle",
+             "oracle": "ql.AnalyticHestonEngine",
+             "description": "Eq. (10) with (17) exactly as printed vs QuantLib, on the cases where the "
+                            "complex log does not cross its branch cut",
+             "target": "heston1993.call", "oracle_args": heston_args,
+             "cases": [c for c in heston_cases if not (c["kappa"] == 1.5 and c["tau"] == 2.0)],
+             "rel_tol": 1e-10, "abs_tol": 1e-10},
+            {"id": "little-heston-trap-finding", "kind": "compare",
+             "description": "Documented finding: at kappa=1.5, sigma=0.3, rho=-0.7, tau=2 eq. (17) as "
+                            "printed crosses the log branch cut; the price differs from the "
+                            "branch-safe form (which matches QuantLib to 1e-13) by 0.064",
+             "target": "heston1993.call", "against": "heston1993.call_trap",
+             "inputs": {"S": 100.0, "v": 0.04, "kappa": 1.5, "theta": 0.04, "sigma": 0.3,
+                        "rho": -0.7, "lambda": 0.0, "r": 0.03, "K": 100.0, "tau": 2.0},
+             "expect_difference": [0.063, 0.065]},
+        ],
+        "bates1996": [
+            {"id": "quantlib-BatesEngine", "kind": "oracle", "oracle": "ql.BatesEngine",
+             "description": "bates1996.call vs QuantLib BatesEngine, 3 jump regimes x 2 maturities x "
+                            "3 strikes", "target": "bates1996.call", "oracle_args": bates_args,
+             "cases": bates_cases, "rel_tol": 1e-7, "abs_tol": 1e-8},
+        ],
+    }
+
+
 PAPERS = [bachelier, black, heston, bates, sabr, zabr, sidani, alos]
 
 
@@ -995,6 +1117,7 @@ def main():
         p["paper"] = {**p["paper"], "title": meta[refs[0]]["title"], "bibliography": refs}
         p["symbols"] += p.pop("extra_symbols", [])
         p["formulas"] = p.pop("extra_formulas", []) + p["formulas"]
+        p["checks"] = p.get("checks", []) + oracle_checks().get(pid, [])
         path = os.path.join(ROOT, "papers", f"{pid}.toml")
         with open(path, "w") as fh:
             fh.write(emit(p))
