@@ -27,28 +27,37 @@
 
 namespace ql = QuantLib;
 
-/// Accumulates |ours - theirs| against tolerance max(abs_tol, rel_tol * |theirs|)
-/// and prints the worst relative difference when the test ends.
+/// Accumulates |ours - theirs| against tolerance max(abs_tol, rel_tol * |theirs|) and,
+/// when the test ends, prints the worst relative difference over the cases the relative
+/// tolerance governs, plus the worst absolute difference over near-zero values (where
+/// abs_tol governs, e.g. far out-of-the-money prices of 1e-12).
 class Tracker {
   public:
     Tracker(std::string name, double rel_tol, double abs_tol = 0.0)
         : name_(std::move(name)), rel_(rel_tol), abs_(abs_tol) {}
     ~Tracker() {
-        std::printf("  [%-38s] %4d cases, max rel diff %.1e (tol %.0e)\n", name_.c_str(), n_,
-                    worst_, rel_);
+        std::printf("  [%-44s] %4d cases, max rel diff %.1e (tol %.1e)", name_.c_str(),
+                    n_rel_ + n_abs_, worst_rel_, rel_);
+        if (n_abs_)
+            std::printf("; %d near-zero, max abs diff %.1e (tol %.1e)", n_abs_, worst_abs_, abs_);
+        std::printf("\n");
     }
     void check(double ours, double theirs, const std::string& what) {
-        ++n_;
         const double diff = std::abs(ours - theirs);
-        const double rel = diff / std::max(std::abs(theirs), 1e-300);
-        if (std::abs(theirs) > abs_) worst_ = std::max(worst_, rel);
+        if (rel_ * std::abs(theirs) >= abs_) {
+            ++n_rel_;
+            worst_rel_ = std::max(worst_rel_, diff / std::abs(theirs));
+        } else {
+            ++n_abs_;
+            worst_abs_ = std::max(worst_abs_, diff);
+        }
         EXPECT_LE(diff, std::max(abs_, rel_ * std::abs(theirs)))
             << what << ": ours " << ours << " QuantLib " << theirs;
     }
   private:
     std::string name_;
-    double rel_, abs_, worst_ = 0.0;
-    int n_ = 0;
+    double rel_, abs_, worst_rel_ = 0.0, worst_abs_ = 0.0;
+    int n_rel_ = 0, n_abs_ = 0;
 };
 
 namespace qlsetup {

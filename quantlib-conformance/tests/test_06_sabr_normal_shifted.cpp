@@ -4,7 +4,7 @@
 //    short-maturity solution (their ZABR paper, gamma = 1). QuantLib's own SABR-with-gamma=1,
 //    ZabrModel::normalVolatility, uses the same closed form, so it must agree tightly.
 //    QuantLib's unsafeSabrNormalVolatility is a different (Hagan-style, time-corrected)
-//    expansion; it is compared at T -> 0 with a tolerance that records the expansion gap.
+//    expansion; at T -> 0 it must agree near the money, and its gap in the wings is pinned.
 #include <ql/termstructures/volatility/sabr.hpp>
 #include <ql/termstructures/volatility/zabr.hpp>
 #include "common.hpp"
@@ -30,11 +30,25 @@ TEST(SabrNormal, AndreasenHuge7MatchesZabrAtGammaOne) {
     }
 }
 
-TEST(SabrNormal, ShortMaturityLimitOfUnsafeSabrNormalVolatility) {
-    // Different expansions agree only to leading order; this pins the size of the gap.
-    Tracker tr("SABR normal: A-H (7) vs sabrNormal T->0", 2e-3);
+TEST(SabrNormal, AgreesWithUnsafeSabrNormalVolatilityNearTheMoney) {
+    // Two different expansions agree to leading order near the money (measured <= 1e-5).
+    Tracker tr("SABR normal: A-H (7) vs sabrNormal, ATM+-5%", 2e-5);
     for (auto c : grids::sabr()) {
-        if (c.beta >= 1.0) continue;
+        if (c.beta >= 1.0 || std::abs(c.K / c.f - 1.0) > 0.051) continue;
+        tr.check(wwmath::gen::zabr_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
+                 ql::unsafeSabrNormalVolatility(c.K, c.f, 0.0, c.alpha, c.beta, c.nu, c.rho), "");
+    }
+}
+
+TEST(SabrNormal, ExpansionGapInTheWingsIsBounded) {
+    // NOT a conformance check. A-H (7) integrates sigma(u) = u^beta exactly; QuantLib's
+    // unsafeSabrNormalVolatility (Hagan-style, via the Deloitte note) uses geometric-average
+    // approximations, so the two diverge away from the money: measured max 1.2e-2 at
+    // K/f = 0.5 or 2 with beta = 0, 2.5e-3 at beta = 0.5, 8.7e-4 at beta = 0.7. This pins the
+    // gap so a change in either expansion shows up.
+    Tracker tr("SABR normal: expansion gap, wings", 1.5e-2);
+    for (auto c : grids::sabr()) {
+        if (c.beta >= 1.0 || std::abs(c.K / c.f - 1.0) <= 0.051) continue;
         tr.check(wwmath::gen::zabr_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
                  ql::unsafeSabrNormalVolatility(c.K, c.f, 0.0, c.alpha, c.beta, c.nu, c.rho), "");
     }

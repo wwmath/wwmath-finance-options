@@ -30,6 +30,26 @@ research/papers/*.toml ──(research/tools/cpp.py)──► include/wwmath/gen
 Each test prints the worst relative difference it saw, so a run doubles as a
 conformance report.
 
+## Latest run
+
+QuantLib master at commit `0191ca7` (1.44-dev), built from source; 21 tests, all passing.
+
+| check | cases | worst difference |
+|---|---|---|
+| Black-76 call / put vs `blackFormula` | 64 + 64 | 1.7e-14 rel; near-zero prices 3.7e-15 abs |
+| Bachelier call / put vs `bachelierBlackFormula` | 92 | 1.7e-14 rel; near-zero 2.4e-15 abs |
+| Shifted Black-76 vs `blackFormula(displacement)` | 192 | 5.1e-14 rel |
+| Black-76 intrinsic vs `blackFormula(stdDev = 0)` | 64 | exact |
+| SABR (2.17) vs `sabrVolatility` | 48 | 1.9e-16 rel |
+| SABR (2.18) vs `sabrVolatility` at K = f | 48 | exact |
+| SABR shifted vs `shiftedSabrVolatility` | 144 | 3.4e-16 rel |
+| SABR normal, A–H (7) vs `ZabrModel(γ = 1)` | 36 | 4.9e-15 rel |
+| SABR normal, A–H (7) vs `unsafeSabrNormalVolatility`, K/f within ±5% | 12 | 8.3e-6 rel (different expansions) |
+| Heston `call_trap` vs `AnalyticHestonEngine` | 36 | 2.1e-14 rel |
+| Heston eq. (17) as printed, T ≤ 1 | 18 | 6.3e-15 rel |
+| Bates vs `BatesEngine` | 27 | 2.2e-13 rel |
+| ZABR ODE (8) via RK4 vs `ZabrModel::normalVolatility` | 48 | 4.9e-9 rel (QuantLib's RK tolerance) |
+
 **Parameter mappings** (the only hand-written glue, each stated in the test):
 
 - **Bates jumps.** QuantLib's log jump `N(ν, δ²)` maps to `ν = ln(1+k̄*) − δ²/2`, and `q = r − b`.
@@ -42,8 +62,12 @@ conformance report.
   which moves the price by 0.064. A test asserts the size of that gap. The
   branch-safe form `call_trap` matches everywhere.
 - **Normal SABR.** QuantLib's `unsafeSabrNormalVolatility` is a different,
-  time-corrected expansion from Andreasen–Huge (7). Its T → 0 limit is compared
-  with a tolerance that records the gap between the expansions.
+  time-corrected expansion from Andreasen–Huge (7). At T → 0 the two agree to
+  within 1e-5 near the money (K/f within ±5%), which is tested. In the wings they
+  diverge because A–H integrates σ(u) exactly while QuantLib uses geometric-average
+  approximations: the gap reaches 1.2% at K/f = 0.5 or 2 with β = 0 (2.5e-3 at
+  β = 0.5, 8.7e-4 at β = 0.7). A separate test pins that gap; it is not a
+  conformance check.
 
 ## Build and run
 
