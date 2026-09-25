@@ -228,6 +228,53 @@ ast = '''
 '''
 
 [[formulas]]
+id = "black1976.intrinsic"
+name = "Intrinsic value: the call's s -> 0 limit"
+kind = "price"
+source = { fidelity = "derived", verified_against_pdf = false }
+notes = "lim_{s -> 0} of the call; QuantLib's blackFormula returns this when stdDev = 0."
+latex = '''
+c_{0} = \exp\left(\left(-r\right) t\right) \left(F - c^{*}\right)^{+}
+'''
+ast = '''
+{
+  "op": "Eq",
+  "args": [
+    {"op": "Symbol", "name": "c_0"},
+    {
+      "op": "Mul",
+      "args": [
+        {
+          "op": "Call",
+          "fn": "exp",
+          "args": [
+            {
+              "op": "Mul",
+              "args": [
+                {"op": "Neg", "args": [{"op": "Symbol", "name": "r"}]},
+                {"op": "Symbol", "name": "t"}
+              ]
+            }
+          ]
+        },
+        {
+          "op": "Call",
+          "fn": "max",
+          "args": [
+            {
+              "op": "Sub",
+              "args": [{"op": "Symbol", "name": "F"}, {"op": "Symbol", "name": "cstar"}]
+            },
+            {"op": "Number", "value": 0}
+          ]
+        }
+      ]
+    }
+  ]
+}
+'''
+
+[[formulas]]
 id = "black1976.put"
 name = "Put on a futures contract (via parity)"
 kind = "price"

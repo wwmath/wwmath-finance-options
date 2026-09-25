@@ -233,6 +233,11 @@ def black():
               eq(d1, div(add(log(div(Fw, c_)), mul(div(pow_(s, 2), 2), t)), mul(s, sqrt(t)))),
               src()),
             F("black1976.d_2", "d2", "definition", eq(d2, sub(d1, mul(s, sqrt(t)))), src()),
+            F("black1976.intrinsic", "Intrinsic value: the call's s -> 0 limit", "price",
+              eq(sym("c_0"), mul(exp(mul(neg(r), t)), mx(sub(Fw, c_), 0))),
+              src(fidelity="derived"),
+              notes="lim_{s -> 0} of the call; QuantLib's blackFormula returns this when "
+                    "stdDev = 0."),
             F("black1976.put", "Put on a futures contract (via parity)", "price",
               eq(sym("p"), mul(exp(mul(neg(r), t)),
                                sub(mul(c_, N(neg(d2))), mul(Fw, N(neg(d1)))))),
