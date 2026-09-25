@@ -25,12 +25,13 @@ BINARY_OPS = {"Sub", "Div", "Pow", "Eq", "Approx", "Ne", "Lt", "Le", "Gt", "Ge",
 UNARY_OPS = {"Neg", "Sqrt", "Abs", "Expectation", "Variance", "Probability"}
 STRUCT_OPS = {
     "Call", "Apply", "Index", "Differential", "Integral", "Sum", "Product", "Limit",
-    "Derivative", "PartialDerivative", "Piecewise", "SDE", "Distribution",
+    "Derivative", "PartialDerivative", "Piecewise", "SDE", "Distribution", "MalliavinDerivative",
 }
 ALL_OPS = LEAF_OPS | NARY_OPS | BINARY_OPS | UNARY_OPS | STRUCT_OPS
 
 CONSTANTS = {"pi", "e", "i", "inf"}
-FUNCTIONS = {"exp", "log", "sin", "cos", "N", "n", "Re", "Im", "max", "min", "arctan"}
+FUNCTIONS = {"exp", "log", "sin", "cos", "N", "n", "Phi", "varphi", "Re", "Im", "max", "min",
+             "arctan", "factorial"}
 DISTRIBUTIONS = {"Normal", "Poisson"}
 
 
@@ -111,11 +112,16 @@ def children(node: Node) -> list[Node]:
         return [node["of"]]
     if op in ("Integral", "Sum", "Product"):
         key = "integrand" if op == "Integral" else "body"
-        return [node[key], node["lower"], node["upper"]]
+        return [node[key], node["lower"], node["upper"]] + [
+            node[k] for k in ("measure", "region") if k in node]
+    if op == "MalliavinDerivative":
+        return [node["expr"], node["at"]]
+    if op in UNARY_OPS and "given" in node:
+        return list(node["args"]) + [node["given"]]
     if op == "Limit":
         return [node["expr"], node["to"]]
     if op in ("Derivative", "PartialDerivative"):
-        return [node["expr"]]
+        return [node["expr"]] + ([node["at"]] if "at" in node else [])
     if op == "Piecewise":
         out = []
         for p in node["pieces"]:
@@ -169,8 +175,13 @@ def free_symbols(node: Node, bound: frozenset[str] = frozenset()) -> set[str]:
     if op in ("Integral", "Sum", "Product"):
         inner = bound | {node["var"]["name"]}
         key = "integrand" if op == "Integral" else "body"
-        return (free_symbols(node[key], inner) | free_symbols(node["lower"], bound)
-                | free_symbols(node["upper"], bound))
+        out = (free_symbols(node[key], inner) | free_symbols(node["lower"], bound)
+               | free_symbols(node["upper"], bound))
+        if "region" in node:
+            out |= free_symbols(node["region"], inner)
+        if "measure" in node:
+            out |= free_symbols(node["measure"], bound)
+        return out
     out = {node["base"]} if op == "Index" else {node["fn"]} if op == "Apply" else set()
     for c in children(node):
         out |= free_symbols(c, bound)
@@ -210,14 +221,18 @@ def def_params(lhs: Node) -> list[str]:
 # ---------------------------------------------------------------------------
 
 GREEK = {"alpha", "beta", "gamma", "delta", "epsilon", "kappa", "lambda", "mu", "nu", "xi",
-         "rho", "sigma", "tau", "phi", "theta", "psi", "omega", "eta", "zeta", "chi"}
+         "rho", "sigma", "tau", "phi", "theta", "psi", "omega", "eta", "zeta", "chi",
+         "varepsilon", "vartheta", "varphi", "Phi"}
 FN_TEX = {"exp": r"\exp", "log": r"\ln", "sin": r"\sin", "cos": r"\cos", "Re": r"\operatorname{Re}",
-          "Im": r"\operatorname{Im}", "max": r"\max", "min": r"\min", "N": "N", "n": "n",
+          "Im": r"\operatorname{Im}", "max": r"\max", "min": r"\min", "N": "N", "n": "n", "Phi": r"\Phi", "varphi": r"\varphi",
           "arctan": r"\arctan"}
 PREC = {"Add": 1, "Sub": 1, "Neg": 2, "Mul": 3, "Div": 4, "Pow": 5}
 
 
 def _name_tex(name: str) -> str:
+    if "^" in name:
+        main, _, sup = name.partition("^")
+        return f"{_name_tex(main)}^{{{_name_tex(sup)}}}"
     base, _, subscript = name.partition("_")
     b = "\\" + base if base in GREEK else base
     if base.endswith("bar"):
@@ -268,8 +283,10 @@ def latex(node: Node, parent: int = 0) -> str:
     if op == "Abs":
         return f"\\left|{latex(a[0])}\\right|"
     if op == "Call":
-        fn = FN_TEX[node["fn"]]
+        fn = FN_TEX.get(node["fn"], node["fn"])
         inner = ", ".join(latex(x) for x in a)
+        if node["fn"] == "factorial":
+            return f"{latex(a[0], 6)}!"
         if node["fn"] == "max" and len(a) == 2 and a[1] == num(0):
             return f"\\left({latex(a[0])}\\right)^{{+}}"
         return f"{fn}\\left({inner}\\right)"
@@ -284,8 +301,16 @@ def latex(node: Node, parent: int = 0) -> str:
     if op == "Differential":
         return f"d{latex(node['of'], 6)}"
     if op == "Integral":
-        return (f"\\int_{{{latex(node['lower'])}}}^{{{latex(node['upper'])}}} "
-                f"{latex(node['integrand'], 1)} \\, d{latex(node['var'])}")
+        if "region" in node:
+            lim = f"\\int_{{{latex(node['region'])}}} "
+        else:
+            lim = f"\\int_{{{latex(node['lower'])}}}^{{{latex(node['upper'])}}} "
+        dv = f"d{latex(node['var'])}"
+        if "measure" in node:
+            dv = f"{latex(node['measure'])}\\left({dv}\\right)"
+        return f"{lim}{latex(node['integrand'], 1)} \\, {dv}"
+    if op == "MalliavinDerivative":
+        return f"D_{{{latex(node['at'])}}} {latex(node['expr'], 6)}"
     if op in ("Sum", "Product"):
         cmd = r"\sum" if op == "Sum" else r"\prod"
         return (f"{cmd}_{{{latex(node['var'])}={latex(node['lower'])}}}^{{{latex(node['upper'])}}} "
@@ -294,11 +319,15 @@ def latex(node: Node, parent: int = 0) -> str:
         return f"\\lim_{{{latex(node['var'])} \\to {latex(node['to'])}}} {latex(node['expr'], 3)}"
     if op in ("Derivative", "PartialDerivative"):
         dd = "d" if op == "Derivative" else r"\partial"
-        return f"\\frac{{{dd} {latex(node['expr'])}}}{{{dd} {latex(node['var'])}}}"
+        out = f"\\frac{{{dd} {latex(node['expr'])}}}{{{dd} {latex(node['var'])}}}"
+        if "at" in node:
+            out = f"\\left.{out}\\right|_{{{latex(node['var'])} = {latex(node['at'])}}}"
+        return out
     if op in ("Expectation", "Variance", "Probability"):
         letter = {"Expectation": r"\mathbb{E}", "Variance": r"\operatorname{Var}",
                   "Probability": r"\mathbb{P}"}[op]
-        return f"{letter}\\left[{latex(a[0])}\\right]"
+        sub_ = f"_{{{latex(node['given'])}}}" if "given" in node else ""
+        return f"{letter}{sub_}\\left[{latex(a[0])}\\right]"
     if op == "Piecewise":
         rows = [f"{latex(p['value'])} & {latex(p['cond'])}" for p in node["pieces"]]
         rows.append(f"{latex(node['otherwise'])} & \\text{{otherwise}}")
@@ -360,7 +389,9 @@ def to_sympy(node: Node, defs: dict[str, Node] | None = None):
             "max": sp.Max, "min": sp.Min, "arctan": sp.atan,
             "N": lambda x: (1 + sp.erf(x / sp.sqrt(2))) / 2,
             "n": lambda x: sp.exp(-x ** 2 / 2) / sp.sqrt(2 * sp.pi),
+            "factorial": sp.factorial,
         }
+        table["Phi"], table["varphi"] = table["N"], table["n"]
         _ = z
         return table[fn](*args)
     if op == "Apply":
@@ -380,7 +411,8 @@ def to_sympy(node: Node, defs: dict[str, Node] | None = None):
         pieces = [(r(p["value"]), r(p["cond"])) for p in node["pieces"]]
         return sp.Piecewise(*pieces, (r(node["otherwise"]), True))
     if op in ("Derivative", "PartialDerivative"):
-        return sp.Derivative(r(node["expr"]), r(node["var"]))
+        out = sp.Derivative(r(node["expr"]), r(node["var"]))
+        return out.subs(r(node["var"]), r(node["at"])) if "at" in node else out
     if op == "Limit":
         return sp.Limit(r(node["expr"]), r(node["var"]), r(node["to"]))
     raise NotSymPyRepresentable(op)
@@ -415,8 +447,16 @@ NUMERIC_FUNCS: dict[str, Callable] = {
     "max": lambda *a: functools.reduce(np.maximum, [np.real(v) for v in a]),
     "min": lambda *a: functools.reduce(np.minimum, [np.real(v) for v in a]),
     "N": lambda x: special.ndtr(np.real(x)),
+    "Phi": lambda x: special.ndtr(np.real(x)),
+    "varphi": lambda x: np.exp(-np.real(x) ** 2 / 2) / math.sqrt(2 * math.pi),
+    "factorial": lambda x: special.gamma(np.real(x) + 1.0),
     "n": lambda x: np.exp(-np.real(x) ** 2 / 2) / math.sqrt(2 * math.pi),
 }
+
+
+def bind(env: dict[str, Any], values: dict[str, Any]) -> dict[str, Any]:
+    """New scope with ``values`` bound (they shadow definitions of the same name)."""
+    return {**env, **values, "__bound__": frozenset(env.get("__bound__", ())) | values.keys()}
 
 
 def evaluate(node: Node, env: dict[str, Any], ctx: Context):
@@ -428,13 +468,17 @@ def evaluate(node: Node, env: dict[str, Any], ctx: Context):
     if op == "Constant":
         return {"pi": math.pi, "e": math.e, "i": 1j, "inf": math.inf}[node["name"]]
     if op == "Symbol":
+        # scope: bound variables (parameters, integration/summation variables), then
+        # the paper's definitions, then the caller's inputs
         name = node["name"]
-        if name in env:
+        if name in env.get("__bound__", ()):
             return env[name]
         rhs = ctx.lookup(name)
-        if rhs is None:
-            raise KeyError(f"unbound symbol {name!r}")
-        return evaluate(rhs, env, ctx)
+        if rhs is not None:
+            return evaluate(rhs, env, ctx)
+        if name in env:
+            return env[name]
+        raise KeyError(f"unbound symbol {name!r}")
     if op == "Index":
         vals = [ev(i) for i in node["index"]]
         concrete = f"{node['base']}[{','.join(str(int(v)) for v in vals)}]"
@@ -444,14 +488,14 @@ def evaluate(node: Node, env: dict[str, Any], ctx: Context):
         for key, rhs in ctx.defs.items():
             if key.startswith(node["base"] + "[") and not key[len(node["base"]) + 1:-1][0].isdigit():
                 names = key[len(node["base"]) + 1:-1].split(",")
-                return evaluate(rhs, {**env, **dict(zip(names, vals))}, ctx)
+                return evaluate(rhs, bind(env, dict(zip(names, vals))), ctx)
         raise KeyError(f"no definition for {concrete}")
     if op == "Apply":
         vals = [ev(x) for x in a]
         for key, rhs in ctx.defs.items():
             if key.startswith(node["fn"] + "("):
                 names = key[len(node["fn"]) + 1:-1].split(",")
-                return evaluate(rhs, {**env, **dict(zip(names, vals))}, ctx)
+                return evaluate(rhs, bind(env, dict(zip(names, vals))), ctx)
         raise KeyError(f"no definition for function {node['fn']!r}")
     if op == "Add":
         out = ev(a[0])
@@ -489,7 +533,7 @@ def evaluate(node: Node, env: dict[str, Any], ctx: Context):
 
         def f(x):
             with np.errstate(all="ignore"):
-                y = float(np.real(evaluate(node["integrand"], {**env, var: x}, ctx)))
+                y = float(np.real(evaluate(node["integrand"], bind(env, {var: x}), ctx)))
             # Integrands on infinite ranges decay to zero; a non-finite value there can
             # only be overflow in the far tail (e.g. exp(d tau) in Heston's form).
             return 0.0 if infinite and not math.isfinite(y) else y
@@ -499,7 +543,7 @@ def evaluate(node: Node, env: dict[str, Any], ctx: Context):
     if op in ("Sum", "Product"):
         var = node["var"]["name"]
         lo, hi = int(ev(node["lower"])), int(ev(node["upper"]))
-        vals = [evaluate(node["body"], {**env, var: k}, ctx) for k in range(lo, hi + 1)]
+        vals = [evaluate(node["body"], bind(env, {var: k}), ctx) for k in range(lo, hi + 1)]
         return sum(vals) if op == "Sum" else math.prod(vals)
     if op == "Piecewise":
         for p in node["pieces"]:
@@ -514,3 +558,55 @@ def evaluate(node: Node, env: dict[str, Any], ctx: Context):
 
 def evaluate_real(node: Node, env: dict[str, Any], ctx: Context):
     return _real_if_close(evaluate(node, env, ctx))
+
+
+# ---------------------------------------------------------------------------
+# AST substitution and definition inlining (used by symbolic checks)
+# ---------------------------------------------------------------------------
+
+def substitute(node: Node, mapping: dict[str, Node]) -> Node:
+    """Replace free Symbols by ASTs, respecting variables bound by Integral/Sum/Product."""
+    op = node["op"]
+    if op == "Symbol":
+        return mapping.get(node["name"], node)
+    if op in ("Integral", "Sum", "Product") and node["var"]["name"] in mapping:
+        mapping = {k: v for k, v in mapping.items() if k != node["var"]["name"]}
+    out = {}
+    for key, val in node.items():
+        if isinstance(val, dict) and "op" in val:
+            out[key] = substitute(val, mapping)
+        elif isinstance(val, list):
+            out[key] = [substitute(x, mapping) if isinstance(x, dict) and "op" in x else
+                        {k2: substitute(v2, mapping) for k2, v2 in x.items()}
+                        if isinstance(x, dict) else x for x in val]
+        else:
+            out[key] = val
+    return out
+
+
+def inline(node: Node, defs: dict[str, Node], abstract: frozenset[str] = frozenset(),
+           depth: int = 0) -> Node:
+    """Expand Symbol and Apply definitions recursively (Index definitions are left alone)."""
+    if depth > 60:
+        raise RecursionError("definition cycle")
+    op = node["op"]
+    rec = lambda n: inline(n, defs, abstract, depth + 1)  # noqa: E731
+    if op == "Symbol" and node["name"] in defs and node["name"] not in abstract:
+        return rec(defs[node["name"]])
+    if op == "Apply" and node["fn"] not in abstract:
+        for key, rhs in defs.items():
+            if key.startswith(node["fn"] + "("):
+                names = key[len(node["fn"]) + 1:-1].split(",")
+                args = [rec(a) for a in node["args"]]
+                return rec(substitute(rhs, dict(zip(names, args))))
+    out = {}
+    for key, val in node.items():
+        if isinstance(val, dict) and "op" in val:
+            out[key] = rec(val) if key != "var" else val
+        elif isinstance(val, list):
+            out[key] = [rec(x) if isinstance(x, dict) and "op" in x else
+                        {k2: rec(v2) for k2, v2 in x.items()} if isinstance(x, dict) else x
+                        for x in val]
+        else:
+            out[key] = val
+    return out

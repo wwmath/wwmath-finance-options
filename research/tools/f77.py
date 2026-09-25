@@ -185,9 +185,9 @@ class Lowerer:
                 return Val(f"DIMAG({xs[0].expr})" if xs[0].cplx else "0.0D0", False)
             if fn in ("max", "min"):
                 return Val(f"{fn.upper()}({', '.join(re(v) for v in xs)})", False)
-            if fn == "N":
+            if fn in ("N", "Phi"):
                 return Val(f"WWNCDF({re(xs[0])})", False)
-            if fn == "n":
+            if fn in ("n", "varphi"):
                 return Val(f"WWNPDF({re(xs[0])})", False)
             raise NotImplementedError(fn)
         if op == "Integral":

@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import f77  # noqa: E402
 from mathast import (  # noqa: E402
     Context, NotSymPyRepresentable, check_node, def_key, evaluate, evaluate_real, free_symbols,
-    latex, to_sympy,
+    inline, latex, to_sympy,
 )
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -53,7 +53,7 @@ class Paper:
             f["ast"] = json.loads(f["ast"])
             self.formulas[f["id"]] = f
             a = f["ast"]
-            if a["op"] in ("Eq", "Approx"):
+            if a["op"] in ("Eq", "Approx") and f.get("defines", True):
                 key = def_key(a["args"][0])
                 if key:
                     self.defs[key] = a["args"][1]
@@ -296,6 +296,76 @@ def run_sde_reduction(lib: Library, p: Paper, check: dict) -> tuple[bool, str]:
 
 
 # ---------------------------------------------------------------------------
+# Symbolic identities (definitions inlined, then SymPy)
+# ---------------------------------------------------------------------------
+
+def run_sympy_identity(lib: Library, p: Paper, check: dict) -> tuple[bool, str]:
+    import sympy as sp
+
+    abstract = frozenset(check.get("abstract", []))
+    sides = []
+    for which in ("target", "against"):
+        q, node = side(lib, p, check, which)
+        sides.append(to_sympy(inline(node, q.defs, abstract)).doit())
+    subs = {sp.Symbol(k): (sp.Symbol(v) if isinstance(v, str) else v)
+            for k, v in check.get("subs", {}).items()}
+    diff = (sides[0] - sides[1]).subs(subs)
+    if sp.simplify(diff) == 0:
+        return True, "identity holds symbolically"
+    # fall back to exact-arithmetic spot checks at random rational points
+    rng = np.random.default_rng(7)
+    free = sorted(diff.free_symbols, key=str)
+    funcs = {f.func for f in diff.atoms(sp.core.function.AppliedUndef)}
+    worst = 0.0
+    for _ in range(6):
+        pt = {x: sp.Rational(int(rng.integers(2, 40)), int(rng.integers(41, 60))) for x in free}
+        if sp.Symbol("rho") in pt:
+            pt[sp.Symbol("rho")] = -pt[sp.Symbol("rho")]
+        e = diff
+        for fcls in funcs:
+            e = e.replace(fcls, sp.Lambda(sp.Symbol("_w"), 1 + sp.Symbol("_w") ** 2))
+        val = complex(sp.N(e.doit().subs(pt), 30))
+        worst = max(worst, abs(val))
+    ok = worst < 1e-20
+    return ok, (f"simplify inconclusive; max |lhs - rhs| at 6 random points = {worst:.1e}"
+                + ("" if ok else " (FAILS)"))
+
+
+# ---------------------------------------------------------------------------
+# Short-maturity implied volatility (level and skew at the money)
+# ---------------------------------------------------------------------------
+
+def run_implied_vol(lib: Library, p: Paper, check: dict) -> tuple[bool, str]:
+    from scipy.optimize import brentq
+
+    env0 = build_env(lib, p, check)
+    q, price_rhs = lib.formula(check["price"])
+    bac = parse_ast(check["bachelier_ast"])
+    vol, kname, atm = check["vol"], check["strike"], check["atm"]
+    rows, ok = [], True
+    for T in check["maturities"]:
+        env = dict(env0, T=T)
+        k0 = float(env[atm])
+        h = check["bump"] * k0
+
+        def implied(kk):
+            e = dict(env, **{kname: kk})
+            target = float(evaluate_real(price_rhs, e, q.ctx))
+            f = lambda s: float(evaluate_real(bac, dict(e, **{vol: s}), p.ctx)) - target  # noqa
+            return brentq(f, 1e-10, 1e4, xtol=1e-14, rtol=1e-14)
+
+        level = implied(k0)
+        skew = (implied(k0 + h) - implied(k0 - h)) / (2 * h)
+        rows.append((T, level, skew))
+    e_level = float(evaluate_real(parse_ast(check["expected_level_ast"]), env0, p.ctx))
+    e_skew = float(evaluate_real(parse_ast(check["expected_skew_ast"]), env0, p.ctx))
+    T, level, skew = rows[-1]
+    ok = close(level, e_level, check) and close(skew, e_skew, check)
+    trend = "; ".join(f"T={T:g}: I={lv:.6f} dI/dk={sk:.6f}" for T, lv, sk in rows)
+    return ok, f"{trend} | limits: I -> {e_level:.6f}, dI/dk -> {e_skew:.6f}"
+
+
+# ---------------------------------------------------------------------------
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -327,6 +397,10 @@ def main() -> int:
                     if args.no_mc:
                         continue
                     ok, msg = run_monte_carlo(lib, p, check)
+                elif kind == "sympy_identity":
+                    ok, msg = run_sympy_identity(lib, p, check)
+                elif kind == "implied_vol":
+                    ok, msg = run_implied_vol(lib, p, check)
                 elif kind == "sde_reduction":
                     ok, msg = run_sde_reduction(lib, p, check)
                 else:

@@ -95,7 +95,7 @@ description = "Probability index, j in {1, 2}"
 id = "heston1993.spot_sde"
 name = "Spot dynamics"
 kind = "sde"
-source = { equation = "(1)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(1)", page = 328, fidelity = "verbatim-notation", verified_against_pdf = true }
 latex = '''
 dS = \mu S \, t + \sqrt{v} S \, z_{1}
 '''
@@ -129,7 +129,7 @@ ast = '''
 id = "heston1993.variance_sde"
 name = "Variance dynamics (square-root process)"
 kind = "sde"
-source = { equation = "(4)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(4)", page = 329, fidelity = "verbatim-notation", verified_against_pdf = true }
 latex = '''
 dv = \kappa \left(\theta - v\right) \, t + \sigma \sqrt{v} \, z_{2}
 '''
@@ -169,7 +169,8 @@ ast = '''
 id = "heston1993.correlation"
 name = "Brownian correlation"
 kind = "correlation"
-source = { fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { page = 329, fidelity = "restated", verified_against_pdf = true }
+notes = "Stated in words after (4): z_2(t) has correlation rho with z_1(t)."
 latex = '''
 dz_{1} dz_{2} = \rho dt
 '''
@@ -199,7 +200,7 @@ ast = '''
 id = "heston1993.call"
 name = "European call price"
 kind = "price"
-source = { equation = "(10)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(10)", page = 330, fidelity = "verbatim-notation", verified_against_pdf = true }
 depends_on = ["P[j]", "P_tT"]
 latex = '''
 C = S P_{1} - K P_{tT} P_{2}
@@ -237,7 +238,8 @@ ast = '''
 id = "heston1993.bond"
 name = "Discount bond price (constant rate)"
 kind = "definition"
-source = { fidelity = "restated", verified_against_pdf = false }
+source = { equation = "(5)", page = 329, fidelity = "verbatim-notation", verified_against_pdf = true }
+notes = "Heston writes P(t, t + tau) = e^{-r tau}; P_tT is P(t, T) in (10)."
 latex = '''
 P_{tT} = \exp\left(\left(-r\right) \tau\right)
 '''
@@ -267,7 +269,7 @@ ast = '''
 id = "heston1993.x"
 name = "Log spot"
 kind = "definition"
-source = { fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(11)", page = 330, fidelity = "verbatim-notation", verified_against_pdf = true }
 latex = '''
 x = \ln\left(S\right)
 '''
@@ -285,7 +287,7 @@ ast = '''
 id = "heston1993.P_j"
 name = "In-the-money probabilities"
 kind = "probability"
-source = { equation = "(18)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(18)", page = 331, fidelity = "verbatim-notation", verified_against_pdf = true }
 depends_on = ["f[j]"]
 latex = '''
 P_{j} = \frac{1}{2} + \frac{1}{\pi} \int_{0}^{\infty} \operatorname{Re}\left(\frac{\exp\left(\left(-i\right) \phi \ln\left(K\right)\right) f_{j}}{i \phi}\right) \, d\phi
@@ -376,7 +378,7 @@ ast = '''
 id = "heston1993.f_j"
 name = "Characteristic functions"
 kind = "characteristic_function"
-source = { equation = "(17)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(17)", page = 331, fidelity = "verbatim-notation", verified_against_pdf = true }
 depends_on = ["C", "C[j]", "D[j]", "x"]
 latex = '''
 f_{j} = \exp\left(C_{j} + D_{j} v + i \phi x\right)
@@ -421,7 +423,8 @@ ast = '''
 id = "heston1993.C_j"
 name = "C(tau; phi)"
 kind = "definition"
-source = { equation = "(17)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(17)", page = 331, fidelity = "verbatim-notation", verified_against_pdf = true }
+notes = "Unnumbered display following (17)."
 depends_on = ["a", "b[1]", "b[2]", "d[j]", "g[j]"]
 latex = '''
 C_{j} = r \phi i \tau + \frac{a}{{\sigma}^{2}} \left(\left(b_{j} - \rho \sigma \phi i + d_{j}\right) \tau - 2 \ln\left(\frac{1 - g_{j} \exp\left(d_{j} \tau\right)}{1 - g_{j}}\right)\right)
@@ -569,7 +572,8 @@ ast = '''
 id = "heston1993.D_j"
 name = "D(tau; phi)"
 kind = "definition"
-source = { equation = "(17)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(17)", page = 331, fidelity = "verbatim-notation", verified_against_pdf = true }
+notes = "Unnumbered display following (17)."
 depends_on = ["b[1]", "b[2]", "d[j]", "g[j]"]
 latex = '''
 D_{j} = \frac{b_{j} - \rho \sigma \phi i + d_{j}}{{\sigma}^{2}} \frac{1 - \exp\left(d_{j} \tau\right)}{1 - g_{j} \exp\left(d_{j} \tau\right)}
@@ -687,7 +691,8 @@ ast = '''
 id = "heston1993.g_j"
 name = "g"
 kind = "definition"
-source = { equation = "(17)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(17)", page = 331, fidelity = "verbatim-notation", verified_against_pdf = true }
+notes = "Unnumbered display following (17)."
 depends_on = ["b[1]", "b[2]", "d[j]"]
 latex = '''
 g_{j} = \frac{b_{j} - \rho \sigma \phi i + d_{j}}{b_{j} - \rho \sigma \phi i - d_{j}}
@@ -752,7 +757,8 @@ ast = '''
 id = "heston1993.d_j"
 name = "d"
 kind = "definition"
-source = { equation = "(17)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(17)", page = 331, fidelity = "verbatim-notation", verified_against_pdf = true }
+notes = "Unnumbered display following (17)."
 depends_on = ["b[1]", "b[2]", "u[1]", "u[2]"]
 latex = '''
 d_{j} = \sqrt{{\left(\rho \sigma \phi i - b_{j}\right)}^{2} - {\sigma}^{2} \left(2 u_{j} \phi i - {\phi}^{2}\right)}
@@ -836,7 +842,7 @@ ast = '''
 id = "heston1993.u_1"
 name = "u_1"
 kind = "definition"
-source = { equation = "(12)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(12)", page = 330, fidelity = "verbatim-notation", verified_against_pdf = true }
 latex = '''
 u_{1} = \frac{1}{2}
 '''
@@ -854,7 +860,7 @@ ast = '''
 id = "heston1993.u_2"
 name = "u_2"
 kind = "definition"
-source = { equation = "(12)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(12)", page = 330, fidelity = "verbatim-notation", verified_against_pdf = true }
 latex = '''
 u_{2} = -\frac{1}{2}
 '''
@@ -880,7 +886,7 @@ ast = '''
 id = "heston1993.a"
 name = "a"
 kind = "definition"
-source = { equation = "(12)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(12)", page = 330, fidelity = "verbatim-notation", verified_against_pdf = true }
 latex = '''
 a = \kappa \theta
 '''
@@ -901,7 +907,7 @@ ast = '''
 id = "heston1993.b_1"
 name = "b_1"
 kind = "definition"
-source = { equation = "(12)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(12)", page = 330, fidelity = "verbatim-notation", verified_against_pdf = true }
 latex = '''
 b_{1} = \kappa + \lambda - \rho \sigma
 '''
@@ -931,7 +937,7 @@ ast = '''
 id = "heston1993.b_2"
 name = "b_2"
 kind = "definition"
-source = { equation = "(12)", fidelity = "verbatim-notation", verified_against_pdf = false }
+source = { equation = "(12)", page = 330, fidelity = "verbatim-notation", verified_against_pdf = true }
 latex = '''
 b_{2} = \kappa + \lambda
 '''

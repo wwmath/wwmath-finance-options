@@ -1,4 +1,1 @@
-# Source PDFs are downloaded by hand and never committed (copyright).
-pdfs/*
-!pdfs/README.md
 __pycache__/

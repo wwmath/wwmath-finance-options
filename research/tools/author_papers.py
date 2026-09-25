@@ -63,11 +63,11 @@ def emit(paper: dict) -> str:
     for s in paper["symbols"]:
         out += ["", "[[symbols]]"] + [f"{k} = {val(v)}" for k, v in s.items()]
     defs = {def_key(f["ast"]["args"][0]) for f in paper["formulas"]
-            if f["ast"]["op"] in ("Eq", "Approx")}
+            if f["ast"]["op"] in ("Eq", "Approx") and f.get("defines", True)}
     for f in paper["formulas"]:
         ast = f.pop("ast")
         from mathast import free_symbols
-        is_def = ast["op"] in ("Eq", "Approx")
+        is_def = ast["op"] in ("Eq", "Approx") and f.get("defines", True)
         own = def_key(ast["args"][0]) if is_def else None
         used = free_symbols(ast["args"][1] if is_def else ast)
         deps = sorted(k for k in defs if k and k != own and k.split("[")[0].split("(")[0] in used)
@@ -141,13 +141,18 @@ def bachelier():
               "density",
               eq(apply("p", x, t), mul(div(1, mul(2, PI, k, sqrt(t))),
                                         exp(neg(div(pow_(x, 2), mul(4, PI, pow_(k, 2), t)))))),
-              src(fidelity="verbatim-notation"),
-              notes="Gaussian with variance 2*pi*k^2*t: the first mathematical Brownian motion."),
+              src(page=38, verified=True),
+              notes="'L'expression definitive de la probabilite'. Gaussian with variance "
+                    "2 pi k^2 t: the first mathematical Brownian motion."),
+            F("bachelier1900.positive_expectation", "Positive mathematical expectation",
+              "identity", eq(integral(mul(apply("p", x, t), x), "x", 0, INF), mul(k, sqrt(t))),
+              src(page=38, verified=True), defines=False,
+              notes="'est proportionnelle a la racine carree du temps'."),
             F("bachelier1900.simple_option_value", "Value of the simple (at-the-money) option",
               "price", eq(sym("a"), mul(k, sqrt(t))),
-              src(fidelity="restated"),
-              notes="Bachelier shows the simple option's value grows like sqrt(t); with his "
-                    "density the constant is exactly k (checked below)."),
+              src(page=53, verified=True),
+              notes="Coefficient d'instabilite: 'a = k sqrt(t)', a being the value (importance) "
+                    "of the simple option (prime simple)."),
             F("bachelier1900.call", "Normal-model call price (modern restatement)", "price",
               eq(sym("C"), add(mul(sub(Fw, K), N(dd)), mul(sg, sqrt(T), n(dd)))),
               src(fidelity="modern-restatement",
@@ -315,34 +320,41 @@ def heston():
         ],
         "formulas": [
             F("heston1993.spot_sde", "Spot dynamics", "sde",
-              sde(Sx, (mul(mu, Sx), t), (mul(sqrt(v), Sx), sym("z_1"))), h("(1)")),
+              sde(Sx, (mul(mu, Sx), t), (mul(sqrt(v), Sx), sym("z_1"))), h("(1)", 328, verified=True)),
             F("heston1993.variance_sde", "Variance dynamics (square-root process)", "sde",
-              sde(v, (mul(kap, sub(th, v)), t), (mul(sg, sqrt(v)), sym("z_2"))), h("(4)")),
+              sde(v, (mul(kap, sub(th, v)), t), (mul(sg, sqrt(v)), sym("z_2"))), h("(4)", 329, verified=True)),
             F("heston1993.correlation", "Brownian correlation", "correlation",
-              eq(mul(d(sym("z_1")), d(sym("z_2"))), mul(rho, d(t))), h()),
+              eq(mul(d(sym("z_1")), d(sym("z_2"))), mul(rho, d(t))),
+              h(page=329, fidelity="restated", verified=True),
+              notes="Stated in words after (4): z_2(t) has correlation rho with z_1(t)."),
             F("heston1993.call", "European call price", "price",
-              eq(sym("C"), sub(mul(Sx, idx("P", 1)), mul(K, sym("P_tT"), idx("P", 2)))), h("(10)")),
+              eq(sym("C"), sub(mul(Sx, idx("P", 1)), mul(K, sym("P_tT"), idx("P", 2)))), h("(10)", 330, verified=True)),
             F("heston1993.bond", "Discount bond price (constant rate)", "definition",
-              eq(sym("P_tT"), exp(mul(neg(r), tau))), h(fidelity="restated")),
-            F("heston1993.x", "Log spot", "definition", eq(x, log(Sx)), h()),
+              eq(sym("P_tT"), exp(mul(neg(r), tau))), h("(5)", 329, verified=True),
+              notes="Heston writes P(t, t + tau) = e^{-r tau}; P_tT is P(t, T) in (10)."),
+            F("heston1993.x", "Log spot", "definition", eq(x, log(Sx)), h("(11)", 330, verified=True)),
             F("heston1993.P_j", "In-the-money probabilities", "probability",
               eq(idx("P", j), add(half, mul(div(1, PI), integral(
                   Re(div(mul(exp(mul(neg(I), phi, log(K))), idx("f", j)), mul(I, phi))),
-                  "phi", 0, INF)))), h("(18)")),
+                  "phi", 0, INF)))), h("(18)", 331, verified=True)),
             F("heston1993.f_j", "Characteristic functions", "characteristic_function",
-              orig[3], h("(17)")),
-            F("heston1993.C_j", "C(tau; phi)", "definition", orig[0], h("(17)")),
-            F("heston1993.D_j", "D(tau; phi)", "definition", orig[1], h("(17)")),
-            F("heston1993.g_j", "g", "definition", orig[2], h("(17)")),
+              orig[3], h("(17)", 331, verified=True)),
+            F("heston1993.C_j", "C(tau; phi)", "definition", orig[0], h("(17)", 331, verified=True),
+              notes="Unnumbered display following (17)."),
+            F("heston1993.D_j", "D(tau; phi)", "definition", orig[1], h("(17)", 331, verified=True),
+              notes="Unnumbered display following (17)."),
+            F("heston1993.g_j", "g", "definition", orig[2], h("(17)", 331, verified=True),
+              notes="Unnumbered display following (17)."),
             F("heston1993.d_j", "d", "definition",
               eq(dj, sqrt(sub(pow_(sub(rsp, bj), 2),
-                              mul(pow_(sg, 2), sub(mul(2, uj, phi, I), pow_(phi, 2)))))), h("(17)")),
-            F("heston1993.u_1", "u_1", "definition", eq(idx("u", 1), half), h("(12)")),
-            F("heston1993.u_2", "u_2", "definition", eq(idx("u", 2), neg(half)), h("(12)")),
-            F("heston1993.a", "a", "definition", eq(a, mul(kap, th)), h("(12)")),
+                              mul(pow_(sg, 2), sub(mul(2, uj, phi, I), pow_(phi, 2)))))),
+              h("(17)", 331, verified=True), notes="Unnumbered display following (17)."),
+            F("heston1993.u_1", "u_1", "definition", eq(idx("u", 1), half), h("(12)", 330, verified=True)),
+            F("heston1993.u_2", "u_2", "definition", eq(idx("u", 2), neg(half)), h("(12)", 330, verified=True)),
+            F("heston1993.a", "a", "definition", eq(a, mul(kap, th)), h("(12)", 330, verified=True)),
             F("heston1993.b_1", "b_1", "definition", eq(idx("b", 1), sub(add(kap, lam), mul(rho, sg))),
-              h("(12)")),
-            F("heston1993.b_2", "b_2", "definition", eq(idx("b", 2), add(kap, lam)), h("(12)")),
+              h("(12)", 330, verified=True)),
+            F("heston1993.b_2", "b_2", "definition", eq(idx("b", 2), add(kap, lam)), h("(12)", 330, verified=True)),
             F("heston1993.ft_j", "Characteristic functions, rotation-count-safe form",
               "characteristic_function", alt[3], h(**alb),
               notes="Algebraically equal to (17); continuous in phi for long maturities."),
@@ -581,40 +593,171 @@ def sabr():
 # ---------------------------------------------------------------------------
 
 def zabr():
+    s_, z, k, u, y = sym("s"), sym("z"), sym("k"), sym("u"), sym("y")
+    eps, rho, gam, tau, v = sym("epsilon"), sym("rho"), sym("gamma"), sym("tau"), sym("v")
+    sig = lambda x_: apply("sigma", x_)  # noqa: E731
+    veps = lambda x_: apply("varepsilon", x_)  # noqa: E731
+    pd = lambda e, var: {"op": "PartialDerivative", "expr": e, "var": sym(var)}  # noqa: E731
+    dd = lambda e, var: {"op": "Derivative", "expr": e, "var": sym(var)}  # noqa: E731
+    xg = apply("x", s_, z)
+    Jy = lambda a_: apply("J", a_)  # noqa: E731
+    fy = apply("f", y)
+    inv_sig_int = integral(div(1, sig(u)), "u", k, s_)
+    sabr_x = lambda yy: div(log(div(add(sub(Jy(yy), rho), mul(eps, yy)), sub(1, rho))), eps)  # noqa: E731
+    P = lambda pg, eqn=None, **kw: src(eqn, pg, verified=True, **kw)  # noqa: E731
+    typo = "Transcribed with epsilon where the preliminary version prints alpha (typo)."
     return {
-        "paper": {"id": "zabr", "short": "ZABR 2011/2015", "transcription_status": "dynamics-only",
-                  "bib": ["andreasen2011", "caspers2015"]},
+        "paper": {"id": "zabr", "short": "ZABR 2011", "transcription_status": "core-complete",
+                  "bib": ["andreasen2011", "caspers2015"],
+                  "pdf_version": "SSRN 1980726, Preliminary Version, December 2011"},
         "symbols": [
-            S("F", "state", "Forward", domain="nonnegative"),
-            S("alpha", "state", "Stochastic volatility", domain="positive"),
+            S("s", "state", "Forward (underlying) price", domain="nonnegative"),
+            S("z", "state", "Stochastic volatility scale", domain="positive"),
+            S("k", "parameter", "Strike"),
             S("t", "time", "Calendar time"),
-            S("beta", "parameter", "CEV exponent of the forward"),
-            S("gamma", "parameter", "CEV exponent of the volatility (gamma = 1 is SABR)"),
-            S("nu", "parameter", "Volatility of volatility"),
-            S("rho", "parameter", "Correlation"),
-            S("W", "brownian_motion", "Brownian motion driving the forward"),
-            S("Z", "brownian_motion", "Brownian motion driving the volatility"),
+            S("T", "time", "Expiry"),
+            S("tau", "time", "Time to expiry, T - t"),
+            S("W", "brownian_motion", "Brownian motion driving s"),
+            S("Z", "brownian_motion", "Brownian motion driving z"),
+            S("rho", "parameter", "Correlation of W and Z"),
+            S("epsilon", "parameter", "Volatility of volatility"),
+            S("gamma", "parameter", "CEV power of the volatility process (gamma = 1 is SABR)"),
+            S("sigma", "function", "Local volatility function sigma(s) (non-parametric)"),
+            S("varepsilon", "function", "Volatility-of-volatility function epsilon(z)"),
+            S("vartheta", "function", "Equivalent local volatility function"),
+            S("v", "variable", "Implied normal (Bachelier) volatility"),
+            S("vbar", "variable", "Implied Black (lognormal) volatility"),
+            S("x", "function", "Transformed variable x(s, z)"),
+            S("f", "function", "ZABR profile x = z^{1-gamma} f(y)"),
+            S("y", "variable", "Intermediate variable"),
+            S("u", "integration_variable", "Dummy integration variable"),
+            S("c", "parameter", "Level of sigma(s) = c s^beta (Figure 1 uses 0.0873)"),
+            S("beta", "parameter", "CEV power of sigma(s) (Figure 1 uses 0.7)"),
         ],
         "formulas": [
-            F("zabr.forward_sde", "ZABR forward dynamics", "sde",
-              sde(sym("F"), (mul(sym("alpha"), pow_(sym("F"), sym("beta"))), sym("W"))),
-              src(fidelity="restated", ref="Caspers (2015) notation")),
-            F("zabr.vol_sde", "ZABR volatility dynamics: CEV power gamma on the volatility", "sde",
-              sde(sym("alpha"), (mul(sym("nu"), pow_(sym("alpha"), sym("gamma"))), sym("Z"))),
-              src(fidelity="restated", ref="Caspers (2015) notation")),
+            F("zabr.spot_sde", "Forward dynamics", "sde", sde(s_, (mul(z, sig(s_)), sym("W"))),
+              P(3, "(1)")),
+            F("zabr.vol_sde", "Volatility dynamics", "sde", sde(z, (veps(z), sym("Z"))), P(3, "(1)")),
             F("zabr.correlation", "Brownian correlation", "correlation",
-              eq(mul(d(sym("W")), d(sym("Z"))), mul(sym("rho"), d(sym("t")))),
-              src(fidelity="restated")),
+              eq(mul(d(sym("W")), d(sym("Z"))), mul(rho, d(sym("t")))),
+              P(3, fidelity="restated"), notes="Stated in words after (1)."),
+            F("zabr.bachelier", "Normal (Bachelier) option pricing formula", "price",
+              eq(apply("g", tau, s_, v), add(
+                  mul(sub(s_, k), call("Phi", div(sub(s_, k), mul(v, sqrt(tau))))),
+                  mul(v, sqrt(tau), call("varphi", div(sub(s_, k), mul(v, sqrt(tau))))))),
+              P(3, "(2)")),
+            F("zabr.diffusion_condition", "Diffusion (eikonal) condition", "pde",
+              eq(1, add(mul(pow_(z, 2), pow_(sig(s_), 2), pow_(pd(xg, "s"), 2)),
+                        mul(pow_(veps(z), 2), pow_(pd(xg, "z"), 2)),
+                        mul(2, rho, z, sig(s_), veps(z), pd(xg, "s"), pd(xg, "z")))),
+              P(4), defines=False, notes="Boundary condition x(s = k, z) = 0."),
+            F("zabr.implied_normal_vol", "Implied normal volatility from x", "identity",
+              eq(v, div(sub(s_, k), xg)), P(4), defines=False,
+              notes="Error O(tau)."),
+            F("zabr.deterministic_x", "Deterministic-volatility solution (epsilon(z) = 0)", "identity",
+              eq(sym("x"), inv_sig_int), P(5), defines=False),
+            F("zabr.local_vol", "Equivalent local volatility", "identity",
+              eq(apply("vartheta", k), neg(pow_(pd(sym("x"), "k"), -1))), P(5, "(5)"),
+              defines=False),
+            F("zabr.local_vol_sde", "Equivalent 1-D local volatility model", "sde",
+              sde(s_, (apply("vartheta", s_), sym("W"))), P(5, "(6)")),
+            # SABR case, epsilon(z) = epsilon z
+            F("zabr.sabr_y", "SABR case: intermediate variable", "definition",
+              eq(sym("y_SABR"), mul(div(1, z), inv_sig_int)), P(6)),
+            F("zabr.sabr_J", "SABR case: J(y)", "definition",
+              eq(Jy(y), sqrt(sub(add(1, mul(pow_(eps, 2), pow_(y, 2))), mul(2, rho, eps, y)))),
+              P(6), notes=typo),
+            F("zabr.sabr_x", "SABR case: x (7)", "definition",
+              eq(sym("x_SABR"), sabr_x(sym("y_SABR"))), P(6, "(7)"),
+              notes="x = int_0^y J(u)^{-1} du = (1/epsilon) ln((J(y) - rho + epsilon y)/(1 - rho))."),
+            F("zabr.sabr_v", "SABR case: implied normal volatility (7)", "definition",
+              eq(sym("v_SABR"), div(sub(s_, k), sym("x_SABR"))), P(6, "(7)")),
+            F("zabr.sabr_vbar", "SABR case: implied Black volatility (7)", "definition",
+              eq(sym("vbar_SABR"), div(log(div(s_, k)), sym("x_SABR"))), P(6, "(7)")),
+            F("zabr.sabr_local_vol", "SABR case: equivalent local volatility", "identity",
+              eq(apply("vartheta", k), mul(Jy(y), z, sig(k))), P(7), defines=False),
+            F("zabr.figure1_sigma", "sigma(s) used in Figures 1-3", "definition",
+              eq(sig(u), mul(sym("c"), pow_(u, sym("beta")))), P(7, fidelity="restated"),
+              notes="Figure 1 caption: sigma(s) = 0.0873 s^0.7, epsilon = 0.47, rho = -0.48, T = 10."),
+            # ZABR case, epsilon(z) = epsilon z^gamma
+            F("zabr.cev_vol_sde", "ZABR volatility dynamics, epsilon(z) = epsilon z^gamma", "sde",
+              sde(z, (mul(eps, pow_(z, gam)), sym("Z"))), P(8, fidelity="restated"),
+              notes="(1) with the CEV choice of p. 8 (printed as alpha z^gamma; the ODE uses "
+                    "epsilon). gamma = 0, not 0.5, corresponds to Heston."),
+            F("zabr.cev_spot_sde", "Forward dynamics with sigma(s) = c s^beta", "sde",
+              sde(s_, (mul(z, sym("c"), pow_(s_, sym("beta"))), sym("W"))),
+              P(7, fidelity="restated")),
+            F("zabr.zabr_y", "ZABR case: intermediate variable", "definition",
+              eq(sym("y_ZABR"), mul(pow_(z, sub(gam, 2)), inv_sig_int)), P(8)),
+            F("zabr.zabr_x", "ZABR case: x = z^{1-gamma} f(y)", "identity",
+              eq(sym("x"), mul(pow_(z, sub(1, gam)), fy)), P(8), defines=False),
+            F("zabr.ode", "ZABR ODE for f", "ode",
+              eq(1, add(mul(apply("A", y), pow_(dd(fy, "y"), 2)),
+                        mul(apply("B", y), dd(fy, "y"), fy), mul(sym("C"), pow_(fy, 2)))),
+              P(9), defines=False,
+              notes="The printed first line reads '+ C'; the rearranged form F(y, f) below "
+                    "requires '+ C f^2', transcribed here. f(0) = 0."),
+            F("zabr.A", "A(y)", "definition",
+              eq(apply("A", y), add(1, mul(pow_(sub(gam, 2), 2), pow_(eps, 2), pow_(y, 2)),
+                                    mul(2, rho, sub(gam, 2), eps, y))), P(9)),
+            F("zabr.B", "B(y)", "definition",
+              eq(apply("B", y), add(mul(2, rho, sub(1, gam), eps),
+                                    mul(2, sub(1, gam), sub(gam, 2), pow_(eps, 2), y))), P(9)),
+            F("zabr.C", "C", "definition", eq(sym("C"), mul(pow_(sub(1, gam), 2), pow_(eps, 2))),
+              P(9)),
+            F("zabr.F", "f'(y) = F(y, f)", "definition",
+              eq(apply("F", y, sym("f")), div(add(neg(mul(apply("B", y), sym("f"))), sqrt(sub(
+                  mul(pow_(apply("B", y), 2), pow_(sym("f"), 2)),
+                  mul(4, apply("A", y), sub(mul(sym("C"), pow_(sym("f"), 2)), 1))))),
+                  mul(2, apply("A", y)))), P(9)),
+            F("zabr.local_vol_zabr", "ZABR equivalent local volatility", "identity",
+              eq(apply("vartheta", k), mul(z, sig(k), pow_(apply(
+                  "F", y, mul(pow_(z, sub(gam, 1)), sym("x"))), -1))), P(9, "(9)"), defines=False),
         ],
         "checks": [
-            {"id": "gamma-one-is-sabr-vol", "kind": "sde_reduction",
+            {"id": "sabr-x-solves-eikonal", "kind": "sympy_identity",
+             "description": "(7) solves the diffusion condition with epsilon(z) = epsilon z, "
+                            "for an arbitrary sigma(s)",
+             "target_ast": add(mul(pow_(z, 2), pow_(sig(s_), 2), pow_(pd(sym("x_SABR"), "s"), 2)),
+                               mul(pow_(mul(eps, z), 2), pow_(pd(sym("x_SABR"), "z"), 2)),
+                               mul(2, rho, z, sig(s_), mul(eps, z), pd(sym("x_SABR"), "s"),
+                                   pd(sym("x_SABR"), "z"))),
+             "against_ast": num(1), "abstract": ["sigma"]},
+            {"id": "sabr-x-boundary", "kind": "sympy_identity",
+             "description": "x(s = k, z) = 0 for (7)",
+             "target_ast": sym("x_SABR"), "against_ast": num(0), "subs": {"s": "k"},
+             "abstract": ["sigma"]},
+            {"id": "zabr-ode-reduces-to-sabr", "kind": "sympy_identity",
+             "description": "With gamma = 1 the ZABR ODE is solved by the SABR x(y) of (7)",
+             "target_ast": add(mul(apply("A", y), pow_(dd(sabr_x(y), "y"), 2)),
+                               mul(apply("B", y), dd(sabr_x(y), "y"), sabr_x(y)),
+                               mul(sym("C"), pow_(sabr_x(y), 2))),
+             "against_ast": num(1), "subs": {"gamma": 1}},
+            {"id": "F-solves-ode-quadratic", "kind": "sympy_identity",
+             "description": "F(y, f) is a root of A F^2 + B F f + C f^2 = 1",
+             "target_ast": add(mul(apply("A", y), pow_(apply("F", y, sym("f")), 2)),
+                               mul(apply("B", y), apply("F", y, sym("f")), sym("f")),
+                               mul(sym("C"), pow_(sym("f"), 2))),
+             "against_ast": num(1)},
+            {"id": "sabr-x-integral-form", "kind": "compare",
+             "description": "int_0^y J(u)^{-1} du equals the closed form in (7)",
+             "target_ast": integral(div(1, Jy(u)), "u", 0, y), "against_ast": sabr_x(y),
+             "inputs": {"y": 1.7, "epsilon": 0.47, "rho": -0.48}, "rel_tol": 1e-10},
+            {"id": "sabr-7-close-to-hagan", "kind": "compare",
+             "description": "(7) is 'basically the result of Hagan et al.': Black vol vs (2.17) "
+                            "at t_ex = 0, Figure 1 parameters",
+             "target": "zabr.sabr_vbar", "against": "hagan2002.sigma_B",
+             "inputs": {"s": 0.05, "k": 0.08, "z": 1.0, "c": 0.0873, "beta": 0.7, "epsilon": 0.47,
+                        "rho": -0.48, "f": 0.05, "K": 0.08, "alpha": 0.0873, "nu": 0.47,
+                        "t_ex": 0.0}, "rel_tol": 5e-3},
+            {"id": "cev-vol-gamma-one-is-sabr", "kind": "sde_reduction",
              "description": "gamma = 1 reduces the ZABR volatility SDE to SABR (2.13)",
-             "target": "zabr.vol_sde", "against": "hagan2002.vol_sde", "subs": {"gamma": 1},
-             "rename": {"alpha": "alphahat", "Z": "W_2"}},
-            {"id": "forward-is-sabr-forward", "kind": "sde_reduction",
-             "description": "The ZABR forward SDE is the SABR forward SDE",
-             "target": "zabr.forward_sde", "against": "hagan2002.forward_sde", "subs": {},
-             "rename": {"alpha": "alphahat", "F": "Fhat", "W": "W_1"}},
+             "target": "zabr.cev_vol_sde", "against": "hagan2002.vol_sde", "subs": {"gamma": 1},
+             "rename": {"z": "alphahat", "epsilon": "nu", "Z": "W_2"}},
+            {"id": "cev-forward-is-sabr-forward", "kind": "sde_reduction",
+             "description": "With sigma(s) = s^beta the forward SDE is SABR's (2.13)",
+             "target": "zabr.cev_spot_sde", "against": "hagan2002.forward_sde", "subs": {"c": 1},
+             "rename": {"z": "alphahat", "s": "Fhat", "W": "W_1"}},
         ],
     }
 
@@ -704,42 +847,138 @@ def sidani():
 # ---------------------------------------------------------------------------
 
 def alos():
-    X, t, T = sym("X"), sym("t"), sym("T")
-    rst = dict(fidelity="restated", ref="Model class as described in the abstract; notation ours")
+    S_t, k, T, t, sg, rho = sym("S_t"), sym("k"), sym("T"), sym("t"), sym("sigma"), sym("rho")
+    y, s_, u_ = sym("y"), sym("s"), sym("u")
+    ttm = sub(T, t)
+    dk = lambda kk, ss: apply("d", kk, ss)  # noqa: E731
+    bac = lambda a1, a2, a3, a4, a5: apply("Bac", a1, a2, a3, a4, a5)  # noqa: E731
+    P = lambda pg, eqn=None, **kw: src(eqn, pg, verified=True, **kw)  # noqa: E731
+    nu_int = lambda region: {"op": "Integral", "integrand": y, "var": y, "lower": neg(INF),  # noqa: E731
+                             "upper": INF, "measure": sym("nu"), **({"region": region} if region else {})}
+    I_at = lambda kk: apply("I_t", kk)  # noqa: E731
+    kst = sym("kstar_t")
+    dIk = {"op": "PartialDerivative", "expr": I_at(k), "var": k, "at": kst}
+    lim = lambda e: {"op": "Limit", "expr": e, "var": T, "to": t}  # noqa: E731
+    malliavin = {"op": "Expectation", "given": t, "args": [
+        {"op": "MalliavinDerivative", "expr": idx("sigma", u_), "at": s_}]}
+    dbl = integral(integral(malliavin, "u", s_, T), "s", t, T)
+    H = sym("H")
+    n_, lam, muJ, dl = sym("n"), sym("lambda"), sym("mu_J"), sym("delta")
+    m_n = add(S_t, mul(sub(n_, mul(lam, ttm)), muJ))
+    s_n = sqrt(add(mul(pow_(sg, 2), ttm), mul(n_, pow_(dl, 2))))
+    z_n = div(sub(m_n, k), s_n)
     return {
         "paper": {"id": "alos2026", "short": "Alòs, Burés & Vives 2026",
-                  "transcription_status": "dynamics-only"},
+                  "transcription_status": "core-complete",
+                  "pdf_version": "arXiv:2503.22282v1 (31 March 2025); page numbers are the preprint's"},
         "symbols": [
-            S("X", "state", "Asset price (arithmetic dynamics, martingale)"),
-            S("sigma", "process", "Adapted stochastic volatility process"),
-            S("W", "brownian_motion", "Brownian motion driving X, W = rho B + sqrt(1-rho^2) B'"),
-            S("Z", "levy_process", "Pure-jump Levy process with drift making X a martingale"),
-            S("t", "time", "Calendar time"),
-            S("T", "time", "Expiry"),
-            S("N_t", "process", "Poisson counter of the compound-Poisson case"),
-            S("Y", "random_variable", "i.i.d. jump sizes (indexed Y_i)"),
-            S("i", "index", "Jump index"),
-            S("lambda", "parameter", "Jump intensity"),
-            S("K", "parameter", "Strike"),
-            S("I", "variable", "Bachelier implied volatility"),
+            S("S_t", "state", "Asset price at time t (S_0 > 0 fixed)"),
+            S("sigma", "process", "a.s. continuous, square-integrable, F^W-adapted volatility"),
+            S("rho", "parameter", "Correlation, rho in (-1, 1)"),
+            S("W", "brownian_motion", "Brownian motion driving the volatility"),
+            S("B", "brownian_motion", "Independent Brownian motion"),
+            S("L", "levy_process", "Pure-jump Levy process with triplet (a, 0, nu)"),
+            S("a", "parameter", "Drift of L"),
+            S("nu", "measure", "Levy measure of L"),
+            S("c_1", "parameter", "c_1 = int y nu(dy)"),
+            S("c_1^epsilon", "parameter", "Truncated first moment of nu"),
+            S("epsilon", "parameter", "Truncation level"),
+            S("y", "integration_variable", "Jump size"),
+            S("s", "integration_variable", "Time"),
+            S("u", "integration_variable", "Time"),
+            S("t", "time", "Current time"),
+            S("T", "time", "Maturity"),
+            S("k", "parameter", "Strike"),
+            S("kstar_t", "variable", "ATM strike k*_t = S_t"),
+            S("V_t", "variable", "Call price"),
+            S("I_t", "function", "Bachelier implied volatility I_t(k)"),
+            S("v_t", "variable", "Future average volatility"),
+            S("Y_t", "variable", "Integrated future variance"),
+            S("H", "parameter", "Hurst-type regularity exponent of Hypothesis 3"),
+            S("Bac", "function", "Bachelier pricing function"),
+            S("d", "function", "d(k, sigma)"),
+            S("n", "index", "Number of jumps (compound-Poisson illustration)"),
+            S("lambda", "parameter", "Jump intensity (compound-Poisson case, lambda = c_0)"),
+            S("mu_J", "parameter", "Mean Gaussian jump size (Section 7 illustration)"),
+            S("delta", "parameter", "Std. dev. of Gaussian jump size"),
+            S("N_max", "parameter", "Truncation of the Poisson sum"),
+            S("I", "variable", "Trial implied volatility"),
         ],
         "formulas": [
-            F("alos2026.price_sde", "Jump-diffusion SV Bachelier dynamics", "sde",
-              sde(X, (sym("sigma"), sym("W")), (1, sym("Z"))), src(**rst)),
-            F("alos2026.compound_poisson", "Compensated compound-Poisson jump part", "definition",
-              eq(sym("Z"), sub({"op": "Sum", "body": idx("Y", sym("i")), "var": sym("i"),
-                                "lower": num(1), "upper": sym("N_t")},
-                               mul(sym("lambda"), t, expect(sym("Y"))))), src(**rst)),
-            F("alos2026.atm_iv", "ATM Bachelier implied volatility (defining relation)",
-              "definition",
-              eq(expect(call("max", sub({"op": "Symbol", "name": "X_T"}, sym("X_0")), 0)),
-                 div(mul(sym("I"), sqrt(T)), sqrt(mul(2, PI)))),
-              src(fidelity="restated"),
-              notes="Bachelier ATM price is I sqrt(T) / sqrt(2 pi); the theorems give the "
-                    "T -> 0 level and skew of I."),
+            F("alos2026.model", "Jump-diffusion stochastic-volatility Bachelier model", "sde",
+              sde(S_t, (mul(sg, rho), sym("W")), (mul(sg, sqrt(sub(1, pow_(rho, 2)))), sym("B")),
+                  (1, sym("L"))), P(3, "(2.1)", fidelity="restated"),
+              notes="Printed in integral form S_t = S_0 + int_0^t sigma_s (rho dW_s + "
+                    "sqrt(1 - rho^2) dB_s) + L_t; r = 0 throughout."),
+            F("alos2026.martingale_condition", "Martingale condition on the drift of L", "identity",
+              eq(sym("a"), neg(nu_int({"op": "Ge", "args": [{"op": "Abs", "args": [y]}, num(1)]}))),
+              P(3), defines=False),
+            F("alos2026.c_1", "c_1", "identity", eq(sym("c_1"), nu_int(None)), P(3), defines=False,
+              notes="c_0 = nu(R); c_0 < infinity is the compound-Poisson case with lambda = c_0."),
+            F("alos2026.c_1_eps", "c_1^epsilon", "identity",
+              eq(sym("c_1^epsilon"), nu_int({"op": "Gt", "args": [{"op": "Abs", "args": [y]},
+                                                                 sym("epsilon")]})),
+              P(3), defines=False),
+            F("alos2026.bachelier", "Bachelier call price", "price",
+              eq(bac(T, t, S_t, k, sg), add(mul(sub(S_t, k), call("Phi", dk(k, sg))),
+                                            mul(call("varphi", dk(k, sg)), sg, sqrt(ttm)))),
+              P(5, "(3.1)")),
+            F("alos2026.d", "d(k, sigma)", "definition",
+              eq(dk(k, sg), div(sub(S_t, k), mul(sg, sqrt(ttm)))), P(5, "(3.1)")),
+            F("alos2026.vega", "Bachelier vega", "identity",
+              eq({"op": "PartialDerivative", "expr": bac(T, t, S_t, k, sg), "var": sg},
+                 mul(call("varphi", dk(k, sg)), sqrt(ttm))), P(6), defines=False),
+            F("alos2026.future_average_vol", "Future average volatility", "definition",
+              eq(sym("v_t"), sqrt(div(sym("Y_t"), ttm))), P(6)),
+            F("alos2026.Y_t", "Integrated future variance", "definition",
+              eq(sym("Y_t"), integral(pow_(idx("sigma", s_), 2), "s", t, T)), P(6)),
+            F("alos2026.implied_vol", "Bachelier implied volatility", "identity",
+              eq(sym("V_t"), bac(T, t, S_t, k, I_at(k))), P(6), defines=False),
+            F("alos2026.atm_strike", "ATM strike", "identity", eq(kst, S_t), P(6), defines=False),
+            F("alos2026.level", "Theorem 3.2: ATM level", "theorem",
+              eq(lim(I_at(kst)), idx("sigma", t)), P(6, "(3.2)"), defines=False,
+              notes="Holds for every pure-jump Levy martingale L."),
+            F("alos2026.skew", "Theorem 3.2: ATM skew, H >= 1/2", "theorem",
+              eq(lim(dIk), add(div(sym("c_1"), idx("sigma", t)), lim(mul(
+                  div(rho, mul(idx("sigma", t), pow_(ttm, 2))), dbl)))),
+              P(6, "(3.3)"), defines=False,
+              notes="Requires c_1^epsilon -> c_1 as epsilon -> 0."),
+            F("alos2026.skew_rough", "Theorem 3.2: ATM skew, H < 1/2", "theorem",
+              eq(lim(mul(pow_(ttm, sub(half, H)), dIk)),
+                 lim(mul(div(rho, mul(idx("sigma", t), pow_(ttm, add(div(3, 2), H)))), dbl))),
+              P(6, "(3.4)"), defines=False),
+            F("alos2026.cp_normal_price", "Call price, constant sigma + compound-Poisson "
+              "Gaussian jumps", "price",
+              eq(sym("V_t"), {"op": "Sum", "var": n_, "lower": num(0), "upper": sym("N_max"),
+                              "body": mul(exp(neg(mul(lam, ttm))),
+                                          div(pow_(mul(lam, ttm), n_), call("factorial", n_)),
+                                          add(mul(sub(m_n, k), call("Phi", z_n)),
+                                              mul(s_n, call("varphi", z_n))))}),
+              src(fidelity="derived",
+                  ref="Conditioning on the number of jumps; the Section 7 compound-Poisson "
+                      "Gaussian example with constant sigma"),
+              notes="Given n jumps S_T is normal with mean S_t + (n - lambda (T-t)) mu_J and "
+                    "variance sigma^2 (T-t) + n delta^2."),
+            F("alos2026.cp_normal_c1", "c_1 for compound-Poisson Gaussian jumps", "definition",
+              eq(sym("c_1"), mul(lam, muJ)), src(fidelity="derived"),
+              notes="nu(dy) = lambda N(mu_J, delta^2)(dy)."),
         ],
-        "checks": [],
-        "extra_symbols": [S("X_T", "variable", "Terminal price"), S("X_0", "parameter", "Spot")],
+        "checks": [
+            {"id": "vega", "kind": "sympy_identity",
+             "description": "d Bac / d sigma = varphi(d) sqrt(T - t)",
+             "target_ast": {"op": "PartialDerivative", "expr": bac(T, t, S_t, k, sg), "var": sg},
+             "against_ast": mul(call("varphi", dk(k, sg)), sqrt(ttm))},
+            {"id": "theorem-3.2-compound-poisson", "kind": "implied_vol",
+             "description": "Short maturity, constant sigma, Gaussian jumps: I -> sigma (3.2) and "
+                            "dI/dk -> c_1 / sigma (3.3, D sigma = 0)",
+             "price": "alos2026.cp_normal_price",
+             "bachelier_ast": bac(T, t, S_t, k, sym("I")), "vol": "I", "strike": "k",
+             "atm": "S_t", "bump": 1e-4,
+             "expected_level_ast": sg, "expected_skew_ast": div(mul(lam, muJ), sg),
+             "maturities": [1e-3, 1e-4, 1e-5],
+             "inputs": {"S_t": 100.0, "t": 0.0, "sigma": 10.0, "lambda": 3.0, "mu_J": -2.0,
+                        "delta": 1.0, "N_max": 30}, "rel_tol": 2e-2},
+        ],
     }
 
 

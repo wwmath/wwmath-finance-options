@@ -81,7 +81,7 @@ underlying = "cev"
 volatility = "cev_vol"
 jumps = "none"
 correlation = "rho"
-sde = ["zabr.forward_sde", "zabr.vol_sde"]
+sde = ["zabr.cev_spot_sde", "zabr.cev_vol_sde"]
 notes = "gamma = 1 reduces to SABR (symbolic check)."
 
 [[models]]
@@ -101,5 +101,5 @@ underlying = "arithmetic"
 volatility = "adapted_process"
 jumps = "pure_jump_levy"
 correlation = "rho"
-sde = ["alos2026.price_sde"]
+sde = ["alos2026.model"]
 notes = "Not literally 'Bates with arithmetic dynamics': the volatility is a general adapted process and the jumps are any pure-jump Levy martingale (compound Poisson and some infinite-activity cases)."

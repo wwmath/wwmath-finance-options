@@ -16,8 +16,21 @@ Paper ──► papers/<id>.toml ──► Math AST (JSON)
 
 ## The papers: download links
 
-PDFs are not committed. Download them by hand into `pdfs/<id>.pdf`; that folder
-is git-ignored. `bibliography.toml` holds the full metadata.
+Source PDFs live in `pdfs/`, which the repo now tracks (they were uploaded
+through GitHub). If the repository is or becomes public, check each publisher's
+terms: Numdam and arXiv allow redistribution; RFS, JFE and SSRN copies may not.
+`bibliography.toml` holds the full metadata.
+
+| file in `pdfs/` | paper | status |
+|---|---|---|
+| `Bachalier_ASENS_1900_3_17__21_0.pdf` | `bachelier1900` | verified |
+| `Heston-993.pdf` | `heston1993` | verified |
+| `Andreasen-Hudge-ZABR-ssrn-1980726.pdf` | `andreasen2011` (Preliminary Version, Dec 2011) | verified |
+| `Alòs-Burés-Vives-2503.22282v1.pdf` | `alos2026` (arXiv v1 preprint) | verified against the preprint |
+| `Sidani_2014_1502.02963v2.pdf` | **not Sidani**: Crisóstomo, *An Analysis of the Heston Stochastic Volatility Model: Implementation and Calibration using Matlab*, arXiv:1502.02963 | Sidani's paper is SSRN 2445328 and is still needed |
+
+Still to upload: Black 1976, Bates 1996, Hagan et al. 2002, Sidani 2014 (and
+optionally Caspers 2015).
 
 | id | paper | where to get it | access |
 |---|---|---|---|
@@ -53,20 +66,19 @@ the no-jump predecessor of the 2026 paper; Obłój 2008,
 
 | paper | status | what's in the TOML |
 |---|---|---|
-| Bachelier 1900 | core complete | his density p(x,t), simple-option value a = k√t, modern normal call/put, ABM SDE |
+| Bachelier 1900 | **verified** (pp. 38, 53) | his density p(x,t), ∫₀^∞ p x dx = k√t, simple-option value a = k√t; plus a modern normal call/put and ABM SDE |
 | Black 1976 | core complete | futures SDE, call, d1, d2, put (via parity) |
-| Heston 1993 | core complete | spot/variance SDEs, correlation, eq. (10) call, P_j, f_j, C, D, g, d, u_j, b_j, a; plus the Albrecher "little trap" form |
+| Heston 1993 | **verified** (pp. 328–331) | (1), (4), (5), (10), (11), u_j/a/b_j after (12), (17) with C, D, g, d, (18); plus the Albrecher "little trap" form (not yet verified) |
 | Bates 1996 | core complete | jump-diffusion SDE, variance SDE, jump law, Poisson arrivals, CF ψ(u), P_1, P_2, call |
 | SABR 2002 | core complete | SDEs (2.13), σ_B (2.17a–c), σ_ATM (2.18) |
-| ZABR 2011/2015 | **dynamics only** | SDEs; the expansion formulas are waiting on the PDFs |
+| ZABR 2011 | **verified** (pp. 3–9) | model (1), Bachelier g (2), diffusion (eikonal) condition, local vol (5)–(6), SABR case (7), ZABR ODE with A, B, C, F, (9). Two typos in the preliminary version are corrected and noted: α printed for ε, and `+ C` for `+ C f²` |
 | Sidani 2014 | **derived, pending PDF** | SDEs, plus a CF and call price **we derived** from the model's affine structure. These still need comparing with Sidani's own closed form |
-| Alòs/Burés/Vives 2026 | **dynamics only** | SV-Bachelier + Lévy SDE, compound-Poisson jump part, ATM-IV defining relation. The level and skew theorems are waiting on the PDF |
+| Alòs/Burés/Vives 2026 | **verified vs arXiv v1** (pp. 3–6) | model (2.1), martingale condition, c₁, Bac (3.1), vega, v_t/Y_t, implied vol, Theorem 3.2 (3.2)–(3.4) with the Malliavin term |
 
-**Caveat.** This session couldn't reach arXiv, SSRN or Numdam, so no formula has
-been compared with a PDF yet (`verified_against_pdf = false` everywhere). The
-formulas are the standard, well-known forms and pass the checks below, but the
-equation numbers (e.g. Heston (10)/(17)/(18), Hagan (2.17)/(2.18)) are from
-memory. Confirm them against the PDFs, then set `verified_against_pdf = true`.
+**Verification.** Entries with `verified_against_pdf = true` were read line by
+line against the uploaded PDF, with page and equation numbers. Black 1976,
+Bates 1996, Hagan 2002 and Sidani 2014 are still unverified: they are the
+standard forms and pass every check, but their equation numbers are from memory.
 
 ## What the validator proves
 
@@ -84,7 +96,14 @@ Run `python tools/validate.py`. It needs numpy, scipy, sympy and gfortran.
   (correlated Brownian motions, Poisson jumps, jump sizes solved from the
   `ln(1+k) ~ N` AST with SymPy). The results match every pricing formula within
   4 standard errors.
-* **Symbolic reductions.** ZABR's SDEs at γ = 1 are exactly SABR's (SymPy).
+* **Symbolic proofs (SymPy).** ZABR's SDEs at γ = 1 are exactly SABR's. The SABR
+  solution (7) satisfies the eikonal diffusion condition for an *arbitrary*
+  σ(s), and its boundary condition. The ZABR ODE at γ = 1 is solved by (7).
+  F(y, f) is a root of the ODE's quadratic. The Bachelier vega in Alòs et al.
+  is ∂Bac/∂σ.
+* **Theorem 3.2, numerically.** With constant σ and Gaussian compound-Poisson
+  jumps, the implied Bachelier ATM level → σ (3.2) and skew → c₁/σ (3.3) as
+  T → 0.
 * **FORTRAN 77.** Every numeric check's formula is lowered AST → fixed-form F77
   → gfortran → run, and must reproduce the Python reference interpreter.
   32 programs are generated; the sources are in `generated/f77/`.
@@ -119,14 +138,8 @@ generated/            F77 sources and validation report (regenerated)
 pdfs/                 your downloaded PDFs (git-ignored)
 ```
 
-## Next steps once the PDFs are in `pdfs/`
+## Next steps
 
-1. Check each entry line by line against its PDF. Fix the equation/page
-   numbers and set `verified_against_pdf = true`.
-2. Sidani: compare our derived CF/price with the paper's closed form. Keep ours
-   as `derived` if the two differ only in form.
-3. ZABR: transcribe the short-time expansion (Andreasen–Huge §2–3, Caspers'
-   intermediate steps).
-4. Alòs/Burés/Vives: transcribe the ATM level and skew limits (compound
-   Poisson, then the infinite-activity extension), with numeric short-maturity
-   checks against the MC engine.
+1. Upload Black 1976, Bates 1996, Hagan 2002 and the real Sidani 2014, then verify them.
+2. Sidani: compare our derived CF/price with the paper's closed form.
+3. Alòs et al.: compare the arXiv v1 transcription with the SIAM version of record.
