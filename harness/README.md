@@ -1,13 +1,14 @@
 # Cross-Language Heston WASM Conformance Harness
 
-One kernel, defined once, emitted to six languages and one direct backend.
+Four Monte Carlo step kernels (normal Heston, Heston, Bates, SABR). Each is
+defined once, emitted to six languages and one direct backend.
 Each target is compiled to its own WASM module and must reproduce the
 reference **bit for bit**.
 
 ```
-Domain AST   research/papers/sidani2014.toml  (forward_sde, variance_sde, correlation)
+Domain AST   research/papers/{sidani2014,heston1993,bates1996,hagan2002}.toml  SDEs
    ↓         Euler full-truncation scheme      research/tools/ir.py
-Typed Math IR                                   generated/kernel.ir.json
+Typed Math IR                                   generated/kernels.ir.json
    ├── C            clang 18 --target=wasm32                     Tier 1
    ├── C++          clang++ 18 --target=wasm32                   Tier 1
    ├── Zig          zig 0.13 wasm32-freestanding                 Tier 1
@@ -17,17 +18,29 @@ Typed Math IR                                   generated/kernel.ir.json
    └── direct WASM  binary encoder in research/tools/emitters.py
 ```
 
-## The ABI
+## Kernels
 
-The same flat ABI for every language. No structs are part of the contract.
+Four kernels, each lowered from its paper's SDE ASTs with an Euler full-truncation
+step. Every language module exports all four.
 
-```
-normal_heston_step(x, v, dt, kappa, theta, xi, rho, z1, z2, output_ptr)
-output[0] = x_next
-output[1] = v_next
-```
+| kernel | from | ABI (then `output_ptr`) | references on the page |
+|---|---|---|---|
+| `normal_heston_step` | `sidani2014` SDEs | `x, v, dt, kappa, theta, xi, rho, z1, z2` | Sidani Fourier price (derived CF); QuantLib has no normal-Heston engine |
+| `heston_step` | `heston1993` (1), (4) | `s, v, dt, r, kappa, theta, sigma, rho, z1, z2` | `heston1993.call_trap`, QuantLib `AnalyticHestonEngine` |
+| `bates_step` | `bates1996` SDEs + jumps | `s, v, dt, b, lambdastar, kbarstar, alpha, betastar, sigma_v, rho, z1, z2, dj` | `bates1996.call`, QuantLib `BatesEngine` |
+| `sabr_step` | `hagan2002` (2.13) | `f, alpha, dt, beta, nu, rho, z1, z2` | Hagan (2.17)/(2.18) → Black-76, QuantLib `sabrVolatility` → `blackFormula` |
 
-The kernel is one Euler full-truncation step of Sidani's normal-Heston SDEs:
+The ABI rule is `kernel(states…, dt, params…, randoms…, output_ptr)`, with
+`output[i]` = the next value of state *i*. No structs are part of the contract.
+The random inputs are sampled by the host:
+
+* `z1, z2` are standard normals. The first drives its Brownian motion alone;
+  the second is correlated through ρ by Cholesky.
+* `dj` is the compound jump increment `Π(1 + kᵢ) − 1` over the step's Poisson
+  jumps, where `ln(1 + k) ~ N(ln(1 + k̄*) − δ²/2, δ²)`. It replaces the mark `k`
+  in Bates' `k S dq` term, so the kernel stays pure arithmetic.
+
+The normal-Heston kernel is exactly the one specified originally:
 
 ```
 v_pos   = max(v, 0)
@@ -37,6 +50,17 @@ dw_x    = sqrt_dt * (rho * z1 + sqrt(1 - rho * rho) * z2)
 x_next  = x + sqrt(v_pos) * dw_x
 v_next  = v + kappa * (theta - v_pos) * dt + xi * sqrt(v_pos) * dw_v
 ```
+
+## exp and log are defined in the IR
+
+SABR's `F^β` needs `exp` and `log`. Freestanding WASM has no libm, and each
+language's own libm would break bit-identity. So the Typed Math IR has a small
+`u64` layer (`bits`, `from_bits`, shifts, `and`/`or`, conversions), and
+`exp`/`log` are written once in IR with the fdlibm/musl algorithms. The build
+checks that they are within 1 ulp of the platform libm over 20,000 random points
+each. `x^p` lowers to `exp(p · log(max(x, 1e-300)))`. Fortran reinterprets bits
+with F77 `EQUIVALENCE`, because `TRANSFER` would call the Fortran runtime; the
+build rejects any runtime call.
 
 ## Why the results are bit-identical, not just close
 
@@ -57,12 +81,14 @@ Rust host (wasm-bindgen, host/src/lib.rs)
     ├── Fortran module  └── direct WASM module
 ```
 
-The host owns the random numbers (SplitMix64 + Box–Muller), so all engines see
-identical inputs. It drives the Monte Carlo through the ABI only. It then
-reports x_next/v_next, elapsed time, the path difference and a per-strike
-price table (Max |Δ|). The page also shows the `sidani2014.call` Fourier price
-for the defaults, so the WASM Monte Carlo is checked against the paper-level
-formula too.
+The host owns the random numbers (SplitMix64 + Box–Muller normals, Poisson by
+inversion, lognormal compound jumps), so all engines see identical inputs. It
+drives the Monte Carlo through the ABI only. For the selected kernel, it
+reports the next states, elapsed time, the path difference and a per-strike
+price table (Max |Δ|). Two reference columns sit alongside: the **WWMath
+formula**, evaluated from the paper's AST, and **QuantLib** 1.43, both
+precomputed at build time for the default parameters. So the WASM Monte Carlo
+is checked against the paper-level formula and against an independent library.
 
 ## Build, test, view
 

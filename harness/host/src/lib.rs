@@ -1,56 +1,58 @@
 //! Rust host / orchestrator for the Cross-Language Heston WASM Conformance Harness.
 //!
 //! Each engine (C, C++, Fortran, Zig, Rust, direct WASM) is an independently compiled
-//! wasm32 module exporting the same flat ABI:
+//! wasm32 module exporting every kernel with the same flat ABI:
 //!
-//!     normal_heston_step(x, v, dt, kappa, theta, xi, rho, z1, z2, output_ptr)
-//!     output[0] = x_next, output[1] = v_next
+//!     kernel(states..., dt, params..., randoms..., output_ptr)
+//!     output[i] = next value of state i
 //!
 //! The page instantiates each module and hands its exports to this host. The host owns
-//! the random numbers, so every engine sees bit-identical inputs, drives the Monte
-//! Carlo through the ABI only, and reports outputs, timings and differences against
-//! the reference engine.
+//! the random numbers (normals and compound jumps), so every engine sees bit-identical
+//! inputs; it drives the Monte Carlo through the ABI only and reports outputs, timings
+//! and differences against the reference engine.
 
 use js_sys::{Array, Float64Array, Function, Reflect, WebAssembly};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-const KERNEL: &str = "normal_heston_step";
+const NORMAL: u32 = 0;
+const COMPOUND_JUMP: u32 = 1;
 
 struct Engine {
     name: String,
-    func: Function,
+    exports: JsValue,
     memory: WebAssembly::Memory,
     out_ptr: u32,
 }
 
 impl Engine {
-    fn step(&self, a: &[f64; 9], args: &Array) -> (f64, f64) {
-        for (i, x) in a.iter().enumerate() {
+    fn kernel(&self, name: &str) -> Result<Function, JsValue> {
+        Reflect::get(&self.exports, &name.into())?
+            .dyn_into::<Function>()
+            .map_err(|_| JsValue::from_str(&format!("{} does not export {name}", self.name)))
+    }
+
+    fn call(&self, f: &Function, args: &Array, inputs: &[f64], n_out: u32) -> Vec<f64> {
+        for (i, x) in inputs.iter().enumerate() {
             args.set(i as u32, JsValue::from_f64(*x));
         }
-        args.set(9, JsValue::from(self.out_ptr));
-        self.func
-            .apply(&JsValue::NULL, args)
-            .expect("engine call failed");
-        let view = Float64Array::new_with_byte_offset_and_length(
-            &self.memory.buffer(),
-            self.out_ptr,
-            2,
-        );
-        (view.get_index(0), view.get_index(1))
+        args.set(inputs.len() as u32, JsValue::from(self.out_ptr));
+        f.apply(&JsValue::NULL, args).expect("engine call failed");
+        let view =
+            Float64Array::new_with_byte_offset_and_length(&self.memory.buffer(), self.out_ptr, n_out);
+        view.to_vec()
     }
 }
 
-/// SplitMix64 + Box-Muller: deterministic standard normals shared by all engines.
-struct Normals {
+/// SplitMix64 + Box-Muller normals, Poisson by inversion, lognormal compound jumps.
+struct Rng {
     state: u64,
     spare: Option<f64>,
 }
 
-impl Normals {
+impl Rng {
     fn new(seed: u64) -> Self {
-        Normals { state: seed, spare: None }
+        Rng { state: seed, spare: None }
     }
     fn next_u64(&mut self) -> u64 {
         self.state = self.state.wrapping_add(0x9E37_79B9_7F4A_7C15);
@@ -72,6 +74,25 @@ impl Normals {
         self.spare = Some(r * th.sin());
         r * th.cos()
     }
+    fn poisson(&mut self, mean: f64) -> u32 {
+        let (limit, mut p, mut n) = ((-mean).exp(), 1.0, 0u32);
+        loop {
+            p *= self.uniform();
+            if p <= limit {
+                return n;
+            }
+            n += 1;
+        }
+    }
+    /// dJ = prod(1 + k_i) - 1 with ln(1 + k_i) ~ N(m, sd^2), N ~ Poisson(mean)
+    fn compound_jump(&mut self, mean: f64, m: f64, sd: f64) -> f64 {
+        let n = self.poisson(mean);
+        if n == 0 {
+            return 0.0;
+        }
+        let s: f64 = (0..n).map(|_| m + sd * self.normal()).sum();
+        s.exp() - 1.0
+    }
 }
 
 fn now() -> f64 {
@@ -80,12 +101,16 @@ fn now() -> f64 {
     f.call0(&perf).unwrap().as_f64().unwrap()
 }
 
-fn js_num(x: f64) -> String {
+fn num(x: f64) -> String {
     if x.is_finite() {
         format!("{x:e}")
     } else {
         "null".into()
     }
+}
+
+fn nums(xs: &[f64]) -> String {
+    xs.iter().map(|x| num(*x)).collect::<Vec<_>>().join(",")
 }
 
 #[wasm_bindgen]
@@ -100,13 +125,12 @@ impl Harness {
         Harness { engines: Vec::new() }
     }
 
-    /// Register an instantiated engine by its exports object.
+    /// Register an instantiated engine module by its exports object.
     pub fn add_engine(&mut self, name: String, exports: JsValue) -> Result<(), JsValue> {
-        let func: Function = Reflect::get(&exports, &KERNEL.into())?.dyn_into()?;
         let memory: WebAssembly::Memory = Reflect::get(&exports, &"memory".into())?.dyn_into()?;
-        // A fresh page nobody else uses holds the two outputs.
+        // A fresh page nobody else uses holds the outputs.
         let old_pages = memory.grow(1);
-        self.engines.push(Engine { name, func, memory, out_ptr: old_pages * 65536 });
+        self.engines.push(Engine { name, exports, memory, out_ptr: old_pages * 65536 });
         Ok(())
     }
 
@@ -114,99 +138,92 @@ impl Harness {
         self.engines.iter().map(|e| e.name.clone()).collect()
     }
 
-    /// One call of every engine on the same inputs: JSON {name: [x_next, v_next]}.
-    #[allow(clippy::too_many_arguments)]
-    pub fn step_all(&self, x: f64, v: f64, dt: f64, kappa: f64, theta: f64, xi: f64,
-                    rho: f64, z1: f64, z2: f64) -> String {
-        let args = Array::new_with_length(10);
-        let a = [x, v, dt, kappa, theta, xi, rho, z1, z2];
-        let parts: Vec<String> = self
-            .engines
-            .iter()
-            .map(|e| {
-                let (xn, vn) = e.step(&a, &args);
-                format!("\"{}\":[{},{}]", e.name, js_num(xn), js_num(vn))
-            })
-            .collect();
-        format!("{{{}}}", parts.join(","))
+    /// One call of `kernel` in every engine on the same inputs: JSON {engine: [outputs]}.
+    pub fn step_all(&self, kernel: String, inputs: Vec<f64>, n_out: u32) -> Result<String, JsValue> {
+        let args = Array::new_with_length(inputs.len() as u32 + 1);
+        let mut parts = Vec::new();
+        for e in &self.engines {
+            let f = e.kernel(&kernel)?;
+            parts.push(format!("\"{}\":[{}]", e.name, nums(&e.call(&f, &args, &inputs, n_out))));
+        }
+        Ok(format!("{{{}}}", parts.join(",")))
     }
 
-    /// Monte Carlo through every engine with shared normals. Returns JSON.
+    /// Monte Carlo of `kernel` through every engine with shared random inputs.
+    ///
+    /// `init`: initial states; `params`: kernel parameters; `random_kinds`: 0 = normal,
+    /// 1 = compound jump; `jump`: [intensity, mean log jump, log jump sd]. Prices are
+    /// `discount * E[(state_0(T) - K)^+]`. Returns JSON.
     #[allow(clippy::too_many_arguments)]
-    pub fn run(&self, x0: f64, v0: f64, t_end: f64, kappa: f64, theta: f64, xi: f64,
-               rho: f64, paths: u32, steps: u32, seed: u64, strikes: Vec<f64>,
-               reference: String) -> String {
+    pub fn run(&self, kernel: String, init: Vec<f64>, params: Vec<f64>, random_kinds: Vec<u32>,
+               jump: Vec<f64>, t_end: f64, paths: u32, steps: u32, seed: u64,
+               strikes: Vec<f64>, discount: f64, reference: String) -> Result<String, JsValue> {
         let dt = t_end / steps as f64;
-        let mut rng = Normals::new(seed);
-        let n = (paths * steps) as usize;
-        let z: Vec<f64> = (0..2 * n).map(|_| rng.normal()).collect();
-        let args = Array::new_with_length(10);
+        let n_states = init.len();
+        let n_rand = random_kinds.len();
+        let mut rng = Rng::new(seed);
+        let total = paths as usize * steps as usize;
+        let mut randoms = vec![0.0; total * n_rand];
+        for s in 0..total {
+            for (j, kind) in random_kinds.iter().enumerate() {
+                randoms[s * n_rand + j] = match *kind {
+                    NORMAL => rng.normal(),
+                    COMPOUND_JUMP => rng.compound_jump(jump[0] * dt, jump[1], jump[2]),
+                    _ => return Err("unknown random kind".into()),
+                };
+            }
+        }
+        let n_in = n_states + 1 + params.len() + n_rand;
+        let args = Array::new_with_length(n_in as u32 + 1);
+        let mut inputs = vec![0.0; n_in];
+        inputs[n_states] = dt;
+        inputs[n_states + 1..n_states + 1 + params.len()].copy_from_slice(&params);
 
-        let mut results: Vec<(String, f64, Vec<f64>, Vec<f64>, Vec<f64>)> = Vec::new();
+        struct Res { name: String, elapsed: f64, terminal: Vec<f64>, prices: Vec<f64>, se: Vec<f64> }
+        let mut results: Vec<Res> = Vec::new();
         for e in &self.engines {
+            let f = e.kernel(&kernel)?;
             let mut terminal = vec![0.0; paths as usize];
             let t0 = now();
             for p in 0..paths as usize {
-                let (mut x, mut v) = (x0, v0);
+                let mut state = init.clone();
                 for s in 0..steps as usize {
-                    let k = 2 * (p * steps as usize + s);
-                    let out = e.step(&[x, v, dt, kappa, theta, xi, rho, z[k], z[k + 1]], &args);
-                    x = out.0;
-                    v = out.1;
+                    inputs[..n_states].copy_from_slice(&state);
+                    let k = (p * steps as usize + s) * n_rand;
+                    inputs[n_in - n_rand..].copy_from_slice(&randoms[k..k + n_rand]);
+                    state = e.call(&f, &args, &inputs, n_states as u32);
                 }
-                terminal[p] = x;
+                terminal[p] = state[0];
             }
             let elapsed = now() - t0;
-            let (prices, ses): (Vec<f64>, Vec<f64>) = strikes
+            let (prices, se): (Vec<f64>, Vec<f64>) = strikes
                 .iter()
                 .map(|&k| {
-                    let pay: Vec<f64> = terminal.iter().map(|&x| (x - k).max(0.0)).collect();
+                    let pay: Vec<f64> = terminal.iter().map(|&x| discount * (x - k).max(0.0)).collect();
                     let m = pay.iter().sum::<f64>() / paths as f64;
-                    let var = pay.iter().map(|p| (p - m) * (p - m)).sum::<f64>()
-                        / (paths as f64 - 1.0);
+                    let var = pay.iter().map(|p| (p - m) * (p - m)).sum::<f64>() / (paths as f64 - 1.0);
                     (m, (var / paths as f64).sqrt())
                 })
                 .unzip();
-            results.push((e.name.clone(), elapsed, terminal, prices, ses));
+            results.push(Res { name: e.name.clone(), elapsed, terminal, prices, se });
         }
 
-        let ref_idx = results.iter().position(|r| r.0 == reference).unwrap_or(0);
-        let (ref_terminal, ref_prices) = (results[ref_idx].2.clone(), results[ref_idx].3.clone());
+        let ri = results.iter().position(|r| r.name == reference).unwrap_or(0);
         let body: Vec<String> = results
             .iter()
-            .map(|(name, elapsed, terminal, prices, ses)| {
-                let path_diff = terminal
-                    .iter()
-                    .zip(&ref_terminal)
-                    .map(|(a, b)| (a - b).abs())
-                    .fold(0.0, f64::max);
-                let bit_identical = terminal
-                    .iter()
-                    .zip(&ref_terminal)
+            .map(|r| {
+                let diff = r.terminal.iter().zip(&results[ri].terminal)
+                    .map(|(a, b)| (a - b).abs()).fold(0.0, f64::max);
+                let same = r.terminal.iter().zip(&results[ri].terminal)
                     .all(|(a, b)| a.to_bits() == b.to_bits());
-                let price_diff: Vec<String> = prices
-                    .iter()
-                    .zip(&ref_prices)
-                    .map(|(a, b)| js_num((a - b).abs()))
-                    .collect();
                 format!(
-                    "{{\"name\":\"{name}\",\"elapsed_ms\":{},\"calls\":{},\"max_abs_path_diff\":{},\
-                     \"bit_identical\":{bit_identical},\"prices\":[{}],\"se\":[{}],\"price_diff\":[{}]}}",
-                    js_num(*elapsed),
-                    paths as u64 * steps as u64,
-                    js_num(path_diff),
-                    prices.iter().map(|p| js_num(*p)).collect::<Vec<_>>().join(","),
-                    ses.iter().map(|p| js_num(*p)).collect::<Vec<_>>().join(","),
-                    price_diff.join(",")
-                )
+                    "{{\"name\":\"{}\",\"elapsed_ms\":{},\"calls\":{},\"max_abs_path_diff\":{},\
+                     \"bit_identical\":{same},\"prices\":[{}],\"se\":[{}]}}",
+                    r.name, num(r.elapsed), total, num(diff), nums(&r.prices), nums(&r.se))
             })
             .collect();
-        format!(
-            "{{\"reference\":\"{}\",\"strikes\":[{}],\"engines\":[{}]}}",
-            results[ref_idx].0,
-            strikes.iter().map(|k| js_num(*k)).collect::<Vec<_>>().join(","),
-            body.join(",")
-        )
+        Ok(format!("{{\"kernel\":\"{kernel}\",\"reference\":\"{}\",\"strikes\":[{}],\"engines\":[{}]}}",
+                   results[ri].name, nums(&strikes), body.join(",")))
     }
 }
 

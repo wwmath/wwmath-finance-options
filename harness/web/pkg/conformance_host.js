@@ -200,6 +200,22 @@ function passArrayF64ToWasm0(arg, malloc) {
     return ptr;
 }
 
+let cachedUint32ArrayMemory0 = null;
+
+function getUint32ArrayMemory0() {
+    if (cachedUint32ArrayMemory0 === null || cachedUint32ArrayMemory0.byteLength === 0) {
+        cachedUint32ArrayMemory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32ArrayMemory0;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
 const HarnessFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_harness_free(ptr >>> 0, 1));
@@ -218,7 +234,7 @@ export class Harness {
         wasm.__wbg_harness_free(ptr, 0);
     }
     /**
-     * Register an instantiated engine by its exports object.
+     * Register an instantiated engine module by its exports object.
      * @param {string} name
      * @param {any} exports
      */
@@ -246,60 +262,84 @@ export class Harness {
         return this;
     }
     /**
-     * Monte Carlo through every engine with shared normals. Returns JSON.
-     * @param {number} x0
-     * @param {number} v0
+     * Monte Carlo of `kernel` through every engine with shared random inputs.
+     *
+     * `init`: initial states; `params`: kernel parameters; `random_kinds`: 0 = normal,
+     * 1 = compound jump; `jump`: [intensity, mean log jump, log jump sd]. Prices are
+     * `discount * E[(state_0(T) - K)^+]`. Returns JSON.
+     * @param {string} kernel
+     * @param {Float64Array} init
+     * @param {Float64Array} params
+     * @param {Uint32Array} random_kinds
+     * @param {Float64Array} jump
      * @param {number} t_end
-     * @param {number} kappa
-     * @param {number} theta
-     * @param {number} xi
-     * @param {number} rho
      * @param {number} paths
      * @param {number} steps
      * @param {bigint} seed
      * @param {Float64Array} strikes
+     * @param {number} discount
      * @param {string} reference
      * @returns {string}
      */
-    run(x0, v0, t_end, kappa, theta, xi, rho, paths, steps, seed, strikes, reference) {
-        let deferred3_0;
-        let deferred3_1;
+    run(kernel, init, params, random_kinds, jump, t_end, paths, steps, seed, strikes, discount, reference) {
+        let deferred9_0;
+        let deferred9_1;
         try {
-            const ptr0 = passArrayF64ToWasm0(strikes, wasm.__wbindgen_malloc);
+            const ptr0 = passStringToWasm0(kernel, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ptr1 = passStringToWasm0(reference, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const ptr1 = passArrayF64ToWasm0(init, wasm.__wbindgen_malloc);
             const len1 = WASM_VECTOR_LEN;
-            const ret = wasm.harness_run(this.__wbg_ptr, x0, v0, t_end, kappa, theta, xi, rho, paths, steps, seed, ptr0, len0, ptr1, len1);
-            deferred3_0 = ret[0];
-            deferred3_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
+            const ptr2 = passArrayF64ToWasm0(params, wasm.__wbindgen_malloc);
+            const len2 = WASM_VECTOR_LEN;
+            const ptr3 = passArray32ToWasm0(random_kinds, wasm.__wbindgen_malloc);
+            const len3 = WASM_VECTOR_LEN;
+            const ptr4 = passArrayF64ToWasm0(jump, wasm.__wbindgen_malloc);
+            const len4 = WASM_VECTOR_LEN;
+            const ptr5 = passArrayF64ToWasm0(strikes, wasm.__wbindgen_malloc);
+            const len5 = WASM_VECTOR_LEN;
+            const ptr6 = passStringToWasm0(reference, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len6 = WASM_VECTOR_LEN;
+            const ret = wasm.harness_run(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, t_end, paths, steps, seed, ptr5, len5, discount, ptr6, len6);
+            var ptr8 = ret[0];
+            var len8 = ret[1];
+            if (ret[3]) {
+                ptr8 = 0; len8 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred9_0 = ptr8;
+            deferred9_1 = len8;
+            return getStringFromWasm0(ptr8, len8);
         } finally {
-            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+            wasm.__wbindgen_free(deferred9_0, deferred9_1, 1);
         }
     }
     /**
-     * One call of every engine on the same inputs: JSON {name: [x_next, v_next]}.
-     * @param {number} x
-     * @param {number} v
-     * @param {number} dt
-     * @param {number} kappa
-     * @param {number} theta
-     * @param {number} xi
-     * @param {number} rho
-     * @param {number} z1
-     * @param {number} z2
+     * One call of `kernel` in every engine on the same inputs: JSON {engine: [outputs]}.
+     * @param {string} kernel
+     * @param {Float64Array} inputs
+     * @param {number} n_out
      * @returns {string}
      */
-    step_all(x, v, dt, kappa, theta, xi, rho, z1, z2) {
-        let deferred1_0;
-        let deferred1_1;
+    step_all(kernel, inputs, n_out) {
+        let deferred4_0;
+        let deferred4_1;
         try {
-            const ret = wasm.harness_step_all(this.__wbg_ptr, x, v, dt, kappa, theta, xi, rho, z1, z2);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
+            const ptr0 = passStringToWasm0(kernel, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ptr1 = passArrayF64ToWasm0(inputs, wasm.__wbindgen_malloc);
+            const len1 = WASM_VECTOR_LEN;
+            const ret = wasm.harness_step_all(this.__wbg_ptr, ptr0, len0, ptr1, len1, n_out);
+            var ptr3 = ret[0];
+            var len3 = ret[1];
+            if (ret[3]) {
+                ptr3 = 0; len3 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred4_0 = ptr3;
+            deferred4_1 = len3;
+            return getStringFromWasm0(ptr3, len3);
         } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+            wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
         }
     }
 }
@@ -354,10 +394,6 @@ function __wbg_get_imports() {
         const ret = Reflect.get(arg0, arg1);
         return ret;
     }, arguments) };
-    imports.wbg.__wbg_getindex_b3df41665d83d8f3 = function(arg0, arg1) {
-        const ret = arg0[arg1 >>> 0];
-        return ret;
-    };
     imports.wbg.__wbg_grow_43d369088a370694 = function(arg0, arg1) {
         const ret = arg0.grow(arg1 >>> 0);
         return ret;
@@ -372,6 +408,14 @@ function __wbg_get_imports() {
         const ret = result;
         return ret;
     };
+    imports.wbg.__wbg_length_c67d5e5c3b83737f = function(arg0) {
+        const ret = arg0.length;
+        return ret;
+    };
+    imports.wbg.__wbg_new_78c8a92080461d08 = function(arg0) {
+        const ret = new Float64Array(arg0);
+        return ret;
+    };
     imports.wbg.__wbg_newnoargs_105ed471475aaf50 = function(arg0, arg1) {
         const ret = new Function(getStringFromWasm0(arg0, arg1));
         return ret;
@@ -383,6 +427,9 @@ function __wbg_get_imports() {
     imports.wbg.__wbg_newwithlength_c4c419ef0bc8a1f8 = function(arg0) {
         const ret = new Array(arg0 >>> 0);
         return ret;
+    };
+    imports.wbg.__wbg_set_29b6f95e6adb667e = function(arg0, arg1, arg2) {
+        arg0.set(arg1, arg2 >>> 0);
     };
     imports.wbg.__wbg_set_37837023f3d740e8 = function(arg0, arg1, arg2) {
         arg0[arg1 >>> 0] = arg2;
@@ -428,6 +475,10 @@ function __wbg_get_imports() {
         const ret = arg0 === undefined;
         return ret;
     };
+    imports.wbg.__wbindgen_memory = function() {
+        const ret = wasm.memory;
+        return ret;
+    };
     imports.wbg.__wbindgen_number_get = function(arg0, arg1) {
         const obj = arg1;
         const ret = typeof(obj) === 'number' ? obj : undefined;
@@ -458,6 +509,7 @@ function __wbg_finalize_init(instance, module) {
     __wbg_init.__wbindgen_wasm_module = module;
     cachedDataViewMemory0 = null;
     cachedFloat64ArrayMemory0 = null;
+    cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
 
 

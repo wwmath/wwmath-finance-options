@@ -46,6 +46,11 @@ td.ref{color:var(--accent)}
 .tabs button[aria-selected="true"]{color:var(--text);background:var(--panel);border:1px solid var(--line);border-bottom-color:var(--panel);margin-bottom:-1px}
 pre{margin:0;background:var(--code);border:1px solid var(--line);border-top:0;border-radius:0 0 8px 8px;padding:14px;overflow:auto;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:460px}
 .meta{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.kernels{margin-bottom:0}
+.kpanel{border-top-left-radius:0}
+.actions{margin-top:14px}
+.meta code{font-size:12px}
+th.oracle,td.oracle{border-left:1px solid var(--line)}
 .tier{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted)}
 footer{margin-top:40px;font-size:12.5px;color:var(--muted)}
 </style>
@@ -54,30 +59,21 @@ footer{margin-top:40px;font-size:12.5px;color:var(--muted)}
 <main>
   <h1>Cross-Language Heston WASM Conformance Harness</h1>
   <p id="subtitle">Loading…</p>
-  <div class="pipe"><b>Domain AST</b> (sidani2014 SDEs) → <b>Typed Math IR</b> → C · C++ · Fortran · Zig · Rust · Carbon · <b>Direct WASM</b></div>
+  <div class="pipe"><b>Domain AST</b> (paper SDEs) → <b>Typed Math IR</b> → C · C++ · Fortran · Zig · Rust · Carbon · <b>Direct WASM</b></div>
 
-  <h2>Parameters</h2>
-  <div class="panel">
-    <form class="form" id="params" onsubmit="return false">
-      <label>x₀ <input name="x" type="number" step="any"></label>
-      <label>v₀ <input name="v" type="number" step="any"></label>
-      <label>T <input name="T" type="number" step="any"></label>
-      <label>κ <input name="kappa" type="number" step="any"></label>
-      <label>θ <input name="theta" type="number" step="any"></label>
-      <label>ξ <input name="xi" type="number" step="any"></label>
-      <label>ρ <input name="rho" type="number" step="any"></label>
-      <label>paths <input name="paths" type="number" step="1" min="2"></label>
-      <label>steps <input name="steps" type="number" step="1" min="1"></label>
-      <label>seed <input name="seed" type="number" step="1"></label>
-      <button id="run" type="button" disabled>Run conformance</button>
-    </form>
+  <h2>Kernel</h2>
+  <div class="tabs kernels" role="tablist" id="kernel-tabs"></div>
+  <div class="panel kpanel">
+    <p class="meta" id="kernel-source"></p>
+    <form class="form" id="params" onsubmit="return false"></form>
+    <div class="actions"><button id="run" type="button" disabled>Run conformance</button></div>
     <div class="status" id="status"></div>
   </div>
 
   <h2>Engines</h2>
   <div class="panel scroll"><table id="engines"></table></div>
 
-  <h2>Call prices (Monte Carlo through each engine)</h2>
+  <h2>Call prices: Monte Carlo through each engine vs formula and QuantLib</h2>
   <div class="panel scroll"><table id="prices"></table></div>
   <p class="meta" id="fourier-note"></p>
 
@@ -87,9 +83,10 @@ footer{margin-top:40px;font-size:12.5px;color:var(--muted)}
   <p class="meta" id="toolchain"></p>
 
   <footer>
-    One flat ABI for every language: <code>normal_heston_step(x, v, dt, κ, θ, ξ, ρ, z1, z2, out)</code>,
-    <code>out[0] = x_next</code>, <code>out[1] = v_next</code>. The Rust host owns the random numbers, so every engine
-    sees identical inputs; Rust is the reference.
+    One flat ABI for every kernel and language: <code>kernel(states…, dt, params…, randoms…, out)</code>,
+    <code>out[i]</code> = next state <i>i</i>. The Rust host owns the random numbers (normals and compound jumps), so every
+    engine sees identical inputs; Rust is the reference. <code>exp</code>/<code>log</code> (SABR's F<sup>β</sup>) are defined
+    once in the IR, so they are bit-identical too.
   </footer>
 </main>
 <script type="module" src="app.js"></script>

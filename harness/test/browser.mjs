@@ -37,20 +37,27 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 await page.goto(`http://localhost:${port}/`);
-await page.waitForFunction(() => window.__conformance, null, { timeout: 120000 });
-const status = await page.textContent("#status");
-const result = await page.evaluate(() => window.__conformance.res);
-await page.screenshot({ path: path.join(web, "..", "test", "screenshot.png"), fullPage: true });
+const kernels = await page.evaluate(async () => (await (await fetch("manifest.json")).json()).kernels.map((k) => k.name));
+let allSame = true;
+for (const name of kernels) {
+  await page.click(`#kernel-tabs button[data-name="${name}"]`);
+  await page.waitForFunction((n) => window.__conformance?.kernel === n && !document.getElementById("run").disabled,
+    name, { timeout: 180000 });
+  const status = (await page.textContent("#status")).trim();
+  const res = await page.evaluate(() => window.__conformance.res);
+  const same = res.engines.every((e) => e.bit_identical);
+  allSame &&= same;
+  console.log(`${name.padEnd(20)} ${status}`);
+  if (name === "bates_step") await page.screenshot({ path: path.join(web, "..", "test", "screenshot.png"), fullPage: true });
+}
 const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await mobile.goto(`http://localhost:${port}/`);
-await mobile.waitForFunction(() => window.__conformance, null, { timeout: 120000 });
+await mobile.waitForFunction(() => window.__conformance, null, { timeout: 180000 });
 const overflow = await mobile.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
 await browser.close();
 server.close();
 
-console.log(status.trim());
-for (const e of result.engines) console.log(`${e.name.padEnd(8)} ${e.elapsed_ms.toFixed(1).padStart(7)} ms  ${e.bit_identical ? "bit-identical" : "DIFF " + e.max_abs_path_diff}`);
-const ok = !errors.length && result.engines.every((e) => e.bit_identical) && !overflow;
+const ok = !errors.length && allSame && !overflow;
 if (errors.length) console.log("page errors:", errors);
 if (overflow) console.log("FAIL: horizontal page scroll at 390px");
 console.log(ok ? "OK (browser)" : "FAIL (browser)");

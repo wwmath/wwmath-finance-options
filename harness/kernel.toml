@@ -1,23 +1,16 @@
-# Cross-language conformance kernel.
+# Cross-language conformance kernels.
 #
-# The kernel is not hand-written in any language: it is lowered from the paper's
-# SDE ASTs (research/papers/sidani2014.toml) through the Typed Math IR, then
-# emitted to every language from that one IR.
-
-[kernel]
-name = "normal_heston_step"
-paper = "sidani2014"
-sde = ["sidani2014.forward_sde", "sidani2014.variance_sde"]
-correlation = "sidani2014.correlation"
-scheme = "euler-full-truncation"
-
-[abi]
-# One flat ABI for every language: nine f64 by value, then a pointer to f64[2].
-params = ["x", "v", "dt", "kappa", "theta", "xi", "rho", "z1", "z2"]
-outputs = ["x_next", "v_next"]
-rename = { F = "x" }
-# Cholesky order: the first Brownian motion takes z1 alone.
-brownian = [{ name = "Z", normal = "z1" }, { name = "W", normal = "z2" }]
+# No kernel is hand-written in any language: each is lowered from its paper's SDE
+# ASTs (research/papers/*.toml) through the Typed Math IR (Euler, full truncation),
+# then emitted to every language from that one IR.
+#
+# ABI for every kernel and language:
+#   name(states..., dt, params..., randoms..., output_ptr)   output[i] = next state i
+# Random inputs are sampled by the host, so every engine sees identical numbers:
+#   normal         a standard normal driving one Brownian motion (Cholesky order:
+#                  the first normal drives its BM alone)
+#   compound_jump  dJ = prod(1 + k_i) - 1 over the step's Poisson jumps, replacing
+#                  the jump mark (k) in the SDE's  k S dq  term
 
 [engines]
 order = ["c", "cpp", "fortran", "zig", "rust", "carbon", "wasm"]
@@ -25,16 +18,119 @@ reference = "rust"
 labels = { c = "C", cpp = "C++", fortran = "Fortran", zig = "Zig", rust = "Rust", carbon = "Carbon", wasm = "Direct WASM" }
 tiers = { c = 1, cpp = 1, rust = 1, zig = 1, fortran = 2, carbon = 3, wasm = 4 }
 
-[defaults]
-# Normal (absolute) dynamics: sqrt(v) is a price-unit volatility (sqrt(64) = 8).
+[[kernels]]
+name = "normal_heston_step"
+label = "Normal Heston (Sidani 2014)"
+paper = "sidani2014"
+sde = ["sidani2014.forward_sde", "sidani2014.variance_sde"]
+correlation = "sidani2014.correlation"
+rename = { F = "x" }
+params = ["kappa", "theta", "xi", "rho"]
+randoms = [
+  { name = "z1", kind = "normal", drives = "Z" },
+  { name = "z2", kind = "normal", drives = "W" },
+]
+mc_bias_allowance = 0.02
+[kernels.defaults]
 x = 100.0
 v = 64.0
-T = 1.0
 kappa = 1.5
 theta = 81.0
 xi = 6.0
 rho = -0.5
+T = 1.0
 paths = 4000
 steps = 100
 seed = 20260925
+strikes = [80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0]
+
+[[kernels]]
+name = "heston_step"
+label = "Heston (1993)"
+paper = "heston1993"
+sde = ["heston1993.spot_sde", "heston1993.variance_sde"]
+correlation = "heston1993.correlation"
+rename = { S = "s", mu = "r" }
+params = ["r", "kappa", "theta", "sigma", "rho"]
+randoms = [
+  { name = "z1", kind = "normal", drives = "z_2" },
+  { name = "z2", kind = "normal", drives = "z_1" },
+]
+discount_rate = "r"
+mc_bias_allowance = 0.05
+[kernels.defaults]
+s = 100.0
+v = 0.04
+r = 0.03
+kappa = 1.5
+theta = 0.04
+sigma = 0.3
+rho = -0.7
+T = 1.0
+paths = 4000
+steps = 100
+seed = 20260926
+strikes = [80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0]
+
+[[kernels]]
+name = "bates_step"
+label = "Bates (1996)"
+paper = "bates1996"
+sde = ["bates1996.spot_sde", "bates1996.variance_sde"]
+correlation = "bates1996.correlation"
+rename = { S = "s", V = "v" }
+params = ["b", "lambdastar", "kbarstar", "alpha", "betastar", "sigma_v", "rho"]
+randoms = [
+  { name = "z1", kind = "normal", drives = "Z_v" },
+  { name = "z2", kind = "normal", drives = "Z" },
+  { name = "dj", kind = "compound_jump", drives = "q", mark = "k" },
+]
+# the host samples ln(1 + k) ~ N(ln(1 + kbar*) - delta^2/2, delta^2) at intensity lambda*
+jump = { intensity = "lambdastar", mean_jump = "kbarstar", log_sd = "delta" }
+discount_rate = "r"
+extra = ["r", "delta"]
+mc_bias_allowance = 0.05
+[kernels.defaults]
+s = 100.0
+v = 0.04
+b = 0.03
+lambdastar = 0.5
+kbarstar = -0.1
+alpha = 0.06
+betastar = 1.5
+sigma_v = 0.4
+rho = -0.6
+r = 0.03
+delta = 0.15
+T = 1.0
+paths = 4000
+steps = 100
+seed = 20260927
+strikes = [80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0]
+
+[[kernels]]
+name = "sabr_step"
+label = "SABR (Hagan 2002)"
+paper = "hagan2002"
+sde = ["hagan2002.forward_sde", "hagan2002.vol_sde"]
+correlation = "hagan2002.correlation"
+rename = { Fhat = "f", alphahat = "alpha" }
+params = ["beta", "nu", "rho"]
+randoms = [
+  { name = "z1", kind = "normal", drives = "W_2" },
+  { name = "z2", kind = "normal", drives = "W_1" },
+]
+# the formula columns are Hagan's asymptotic (2.17) through Black-76, so they carry
+# the expansion error as well as the Monte Carlo error
+mc_bias_allowance = 0.08
+[kernels.defaults]
+f = 100.0
+alpha = 0.8
+beta = 0.7
+nu = 0.4
+rho = -0.3
+T = 1.0
+paths = 4000
+steps = 100
+seed = 20260928
 strikes = [80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0]
