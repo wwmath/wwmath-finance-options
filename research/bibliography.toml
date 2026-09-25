@@ -1,0 +1,163 @@
+# Source papers for the Math AST library.
+#
+# PDFs are NOT committed (most are copyrighted). Download them by hand into
+# research/pdfs/<id>.pdf (git-ignored). `pdf` links are direct downloads where
+# one exists; `landing` is the publisher/abstract page.
+#
+# access: "open" = free to download, "subscription" = publisher paywall
+# (try your institution or the author's page), "free-registration" = SSRN login.
+
+[[papers]]
+id = "bachelier1900"
+title = "Théorie de la spéculation"
+authors = ["Louis Bachelier"]
+year = 1900
+venue = "Annales scientifiques de l'École Normale Supérieure, Série 3"
+volume = "17"
+pages = "21-86"
+doi = "10.24033/asens.476"
+landing = "https://www.numdam.org/item/ASENS_1900_3_17__21_0/"
+pdf = "https://www.numdam.org/article/ASENS_1900_3_17__21_0.pdf"
+mirrors = ["http://eudml.org/doc/81146"]
+access = "open"
+notes = "Public domain. English translation: Cootner (ed.), The Random Character of Stock Market Prices, MIT Press 1964, pp. 17-78; also Davis & Etheridge, Louis Bachelier's Theory of Speculation, Princeton UP 2006."
+role = "Arithmetic (normal) Brownian dynamics; the Bachelier option price."
+
+[[papers]]
+id = "black1976"
+title = "The pricing of commodity contracts"
+authors = ["Fischer Black"]
+year = 1976
+venue = "Journal of Financial Economics"
+volume = "3(1-2)"
+pages = "167-179"
+doi = "10.1016/0304-405X(76)90024-6"
+landing = "https://doi.org/10.1016/0304-405X(76)90024-6"
+access = "subscription"
+role = "Black-76: lognormal forward/futures option formula."
+
+[[papers]]
+id = "heston1993"
+title = "A Closed-Form Solution for Options with Stochastic Volatility with Applications to Bond and Currency Options"
+authors = ["Steven L. Heston"]
+year = 1993
+venue = "The Review of Financial Studies"
+volume = "6(2)"
+pages = "327-343"
+doi = "10.1093/rfs/6.2.327"
+landing = "https://doi.org/10.1093/rfs/6.2.327"
+access = "subscription"
+role = "Lognormal spot + square-root stochastic variance, no jumps."
+
+[[papers]]
+id = "bates1996"
+title = "Jumps and Stochastic Volatility: Exchange Rate Processes Implicit in Deutsche Mark Options"
+authors = ["David S. Bates"]
+year = 1996
+venue = "The Review of Financial Studies"
+volume = "9(1)"
+pages = "69-107"
+doi = "10.1093/rfs/9.1.69"
+landing = "https://doi.org/10.1093/rfs/9.1.69"
+access = "subscription"
+role = "Heston + lognormal Poisson jumps (lognormal, stochastic vol, jumps)."
+
+[[papers]]
+id = "hagan2002"
+title = "Managing Smile Risk"
+authors = ["Patrick S. Hagan", "Deep Kumar", "Andrew S. Lesniewski", "Diana E. Woodward"]
+year = 2002
+venue = "Wilmott Magazine (September)"
+pages = "84-108"
+landing = "https://www.researchgate.net/publication/235622441_Managing_Smile_Risk"
+mirrors = ["http://www.princeton.edu/~sircar/sabrall.pdf"]
+access = "subscription"
+notes = "No DOI. The Princeton mirror is widely cited but may be dead. Companion: Oblój (2008), 'Fine-tune your smile: correction to Hagan et al.', arXiv:0708.0998."
+role = "SABR dynamics and the Hagan implied-volatility expansion."
+
+[[papers]]
+id = "andreasen2011"
+title = "ZABR -- Expansions for the Masses"
+authors = ["Jesper Andreasen", "Brian Norsk Huge"]
+year = 2011
+venue = "SSRN working paper 1980726"
+doi = "10.2139/ssrn.1980726"
+landing = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1980726"
+access = "free-registration"
+notes = "The original ZABR paper (Dec 2011). The '2015' ZABR reference is Caspers' implementation note below."
+role = "SABR generalised with a CEV power gamma on the volatility."
+
+[[papers]]
+id = "caspers2015"
+title = "Implementation of the ZABR Model"
+authors = ["Peter Caspers"]
+year = 2015
+venue = "SSRN working paper 2692048"
+doi = "10.2139/ssrn.2692048"
+landing = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2692048"
+access = "free-registration"
+notes = "Written 2013, posted Nov 2015. Re-derives Andreasen-Huge with intermediate steps and checks the numbers against QuantLib."
+role = "Step-by-step ZABR derivation; best source for transcribing the expansions."
+
+[[papers]]
+id = "sidani2014"
+title = "A Normal Stochastic Volatility Model"
+authors = ["Majed Sidani"]
+year = 2014
+venue = "SSRN working paper 2445328"
+doi = "10.2139/ssrn.2445328"
+landing = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2445328"
+access = "free-registration"
+role = "Normal (arithmetic) Heston: normal spot + square-root variance, no jumps."
+
+[[papers]]
+id = "alos2026"
+title = "Short-Time Behavior of the At-the-Money Implied Volatility for the Jump-Diffusion Stochastic Volatility Bachelier Model"
+authors = ["Elisa Alòs", "Òscar Burés", "Josep Vives"]
+year = 2026
+venue = "SIAM Journal on Financial Mathematics"
+volume = "17(2)"
+pages = "646-675"
+doi = "10.1137/25M1776615"
+landing = "https://doi.org/10.1137/25M1776615"
+pdf = "https://arxiv.org/pdf/2503.22282"
+mirrors = ["https://arxiv.org/abs/2503.22282"]
+access = "open"
+notes = "Published online 4 June 2026. The arXiv preprint (v1 March 2025) is open access; check it against the SIAM version of record."
+role = "Normal SV + pure-jump Levy jumps: the 'normal Bates' corner."
+
+# ---------------------------------------------------------------------------
+# Supporting references used by restated / checked formulas
+# ---------------------------------------------------------------------------
+
+[[papers]]
+id = "albrecher2007"
+title = "The Little Heston Trap"
+authors = ["Hansjörg Albrecher", "Philipp Mayer", "Wim Schoutens", "Jurgen Tistaert"]
+year = 2007
+venue = "Wilmott Magazine (January)"
+pages = "83-92"
+access = "subscription"
+role = "Branch-cut-safe form of the Heston characteristic function (used for Bates too)."
+
+[[papers]]
+id = "alos2025"
+title = "On the implied volatility of European and Asian call options under the stochastic volatility Bachelier model"
+authors = ["Elisa Alòs", "Òscar Burés", "Josep Vives"]
+year = 2025
+venue = "International Journal of Theoretical and Applied Finance"
+doi = "10.1142/S0219024925500037"
+landing = "https://www.worldscientific.com/doi/10.1142/S0219024925500037"
+access = "subscription"
+role = "No-jump predecessor of alos2026 (SV Bachelier)."
+
+[[papers]]
+id = "schachermayer2008"
+title = "How close are the option pricing formulas of Bachelier and Black-Merton-Scholes?"
+authors = ["Walter Schachermayer", "Josef Teichmann"]
+year = 2008
+venue = "Mathematical Finance"
+volume = "18(1)"
+pages = "155-170"
+access = "subscription"
+role = "Modern statement of the Bachelier call price."
