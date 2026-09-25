@@ -1,0 +1,40 @@
+# Cross-language conformance kernel.
+#
+# The kernel is not hand-written in any language: it is lowered from the paper's
+# SDE ASTs (research/papers/sidani2014.toml) through the Typed Math IR, then
+# emitted to every language from that one IR.
+
+[kernel]
+name = "normal_heston_step"
+paper = "sidani2014"
+sde = ["sidani2014.forward_sde", "sidani2014.variance_sde"]
+correlation = "sidani2014.correlation"
+scheme = "euler-full-truncation"
+
+[abi]
+# One flat ABI for every language: nine f64 by value, then a pointer to f64[2].
+params = ["x", "v", "dt", "kappa", "theta", "xi", "rho", "z1", "z2"]
+outputs = ["x_next", "v_next"]
+rename = { F = "x" }
+# Cholesky order: the first Brownian motion takes z1 alone.
+brownian = [{ name = "Z", normal = "z1" }, { name = "W", normal = "z2" }]
+
+[engines]
+order = ["c", "cpp", "fortran", "zig", "rust", "carbon", "wasm"]
+reference = "rust"
+labels = { c = "C", cpp = "C++", fortran = "Fortran", zig = "Zig", rust = "Rust", carbon = "Carbon", wasm = "Direct WASM" }
+tiers = { c = 1, cpp = 1, rust = 1, zig = 1, fortran = 2, carbon = 3, wasm = 4 }
+
+[defaults]
+# Normal (absolute) dynamics: sqrt(v) is a price-unit volatility (sqrt(64) = 8).
+x = 100.0
+v = 64.0
+T = 1.0
+kappa = 1.5
+theta = 81.0
+xi = 6.0
+rho = -0.5
+paths = 4000
+steps = 100
+seed = 20260925
+strikes = [80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0]

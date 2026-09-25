@@ -1,0 +1,12 @@
+{
+  "name": "heston-wasm-conformance-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "conformance": "node conformance.mjs",
+    "browser": "node browser.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.47.0"
+  }
+}

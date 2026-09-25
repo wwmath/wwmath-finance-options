@@ -1,0 +1,279 @@
+{
+ "name": "normal_heston_step",
+ "params": [
+  {
+   "name": "x",
+   "type": "f64"
+  },
+  {
+   "name": "v",
+   "type": "f64"
+  },
+  {
+   "name": "dt",
+   "type": "f64"
+  },
+  {
+   "name": "kappa",
+   "type": "f64"
+  },
+  {
+   "name": "theta",
+   "type": "f64"
+  },
+  {
+   "name": "xi",
+   "type": "f64"
+  },
+  {
+   "name": "rho",
+   "type": "f64"
+  },
+  {
+   "name": "z1",
+   "type": "f64"
+  },
+  {
+   "name": "z2",
+   "type": "f64"
+  },
+  {
+   "name": "output",
+   "type": "ptr_f64"
+  }
+ ],
+ "lets": [
+  {
+   "name": "v_pos",
+   "type": "f64",
+   "expr": {
+    "op": "max",
+    "args": [
+     {
+      "op": "var",
+      "name": "v"
+     },
+     {
+      "op": "const",
+      "value": 0.0
+     }
+    ]
+   }
+  },
+  {
+   "name": "sqrt_dt",
+   "type": "f64",
+   "expr": {
+    "op": "sqrt",
+    "args": [
+     {
+      "op": "var",
+      "name": "dt"
+     }
+    ]
+   }
+  },
+  {
+   "name": "dw_v",
+   "type": "f64",
+   "expr": {
+    "op": "mul",
+    "args": [
+     {
+      "op": "var",
+      "name": "sqrt_dt"
+     },
+     {
+      "op": "var",
+      "name": "z1"
+     }
+    ]
+   }
+  },
+  {
+   "name": "dw_x",
+   "type": "f64",
+   "expr": {
+    "op": "mul",
+    "args": [
+     {
+      "op": "var",
+      "name": "sqrt_dt"
+     },
+     {
+      "op": "add",
+      "args": [
+       {
+        "op": "mul",
+        "args": [
+         {
+          "op": "var",
+          "name": "rho"
+         },
+         {
+          "op": "var",
+          "name": "z1"
+         }
+        ]
+       },
+       {
+        "op": "mul",
+        "args": [
+         {
+          "op": "sqrt",
+          "args": [
+           {
+            "op": "sub",
+            "args": [
+             {
+              "op": "const",
+              "value": 1.0
+             },
+             {
+              "op": "mul",
+              "args": [
+               {
+                "op": "var",
+                "name": "rho"
+               },
+               {
+                "op": "var",
+                "name": "rho"
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "op": "var",
+          "name": "z2"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "stores": [
+  {
+   "index": 0,
+   "name": "x_next",
+   "expr": {
+    "op": "add",
+    "args": [
+     {
+      "op": "var",
+      "name": "x"
+     },
+     {
+      "op": "mul",
+      "args": [
+       {
+        "op": "sqrt",
+        "args": [
+         {
+          "op": "var",
+          "name": "v_pos"
+         }
+        ]
+       },
+       {
+        "op": "var",
+        "name": "dw_x"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "index": 1,
+   "name": "v_next",
+   "expr": {
+    "op": "add",
+    "args": [
+     {
+      "op": "add",
+      "args": [
+       {
+        "op": "var",
+        "name": "v"
+       },
+       {
+        "op": "mul",
+        "args": [
+         {
+          "op": "mul",
+          "args": [
+           {
+            "op": "var",
+            "name": "kappa"
+           },
+           {
+            "op": "sub",
+            "args": [
+             {
+              "op": "var",
+              "name": "theta"
+             },
+             {
+              "op": "var",
+              "name": "v_pos"
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "op": "var",
+          "name": "dt"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "op": "mul",
+      "args": [
+       {
+        "op": "mul",
+        "args": [
+         {
+          "op": "var",
+          "name": "xi"
+         },
+         {
+          "op": "sqrt",
+          "args": [
+           {
+            "op": "var",
+            "name": "v_pos"
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "op": "var",
+        "name": "dw_v"
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "source": {
+  "paper": "sidani2014",
+  "sde": [
+   "sidani2014.forward_sde",
+   "sidani2014.variance_sde"
+  ],
+  "correlation": "sidani2014.correlation",
+  "scheme": "euler-full-truncation"
+ }
+}

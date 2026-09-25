@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heston WASM Conformance</title>
+<style>
+:root{
+  --bg:#f6f7f9;--panel:#ffffff;--text:#16191d;--muted:#5b6571;--line:#dde2e8;
+  --accent:#1d5fd1;--good:#127a4a;--bad:#b3261e;--warn:#8a5a00;--code:#f0f2f5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1116;--panel:#151a21;--text:#e6ebf1;--muted:#98a4b3;--line:#2a323d;
+    --accent:#7db4ff;--good:#5fd39b;--bad:#ff8a80;--warn:#f0c060;--code:#10151b;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1116;--panel:#151a21;--text:#e6ebf1;--muted:#98a4b3;--line:#2a323d;
+  --accent:#7db4ff;--good:#5fd39b;--bad:#ff8a80;--warn:#f0c060;--code:#10151b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:17px;margin:32px 0 10px}
+p,.muted{color:var(--muted)}
+.pipe{font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);margin:8px 0 0}
+.pipe b{color:var(--text);font-weight:600}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px 14px;align-items:end}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+input{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
+button{font:inherit;font-weight:600;white-space:nowrap;border:0;border-radius:6px;padding:8px 16px;background:var(--accent);color:#fff;cursor:pointer}
+button:disabled{opacity:.5;cursor:progress}
+.status{margin-top:12px;font-size:14px}
+.ok{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13.5px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+td.ref{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{background:transparent;color:var(--muted);border-radius:6px 6px 0 0;padding:7px 12px;font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--text);background:var(--panel);border:1px solid var(--line);border-bottom-color:var(--panel);margin-bottom:-1px}
+pre{margin:0;background:var(--code);border:1px solid var(--line);border-top:0;border-radius:0 0 8px 8px;padding:14px;overflow:auto;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:460px}
+.meta{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.tier{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--muted)}
+footer{margin-top:40px;font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Cross-Language Heston WASM Conformance Harness</h1>
+  <p id="subtitle">Loading…</p>
+  <div class="pipe"><b>Domain AST</b> (sidani2014 SDEs) → <b>Typed Math IR</b> → C · C++ · Fortran · Zig · Rust · Carbon · <b>Direct WASM</b></div>
+
+  <h2>Parameters</h2>
+  <div class="panel">
+    <form class="form" id="params" onsubmit="return false">
+      <label>x₀ <input name="x" type="number" step="any"></label>
+      <label>v₀ <input name="v" type="number" step="any"></label>
+      <label>T <input name="T" type="number" step="any"></label>
+      <label>κ <input name="kappa" type="number" step="any"></label>
+      <label>θ <input name="theta" type="number" step="any"></label>
+      <label>ξ <input name="xi" type="number" step="any"></label>
+      <label>ρ <input name="rho" type="number" step="any"></label>
+      <label>paths <input name="paths" type="number" step="1" min="2"></label>
+      <label>steps <input name="steps" type="number" step="1" min="1"></label>
+      <label>seed <input name="seed" type="number" step="1"></label>
+      <button id="run" type="button" disabled>Run conformance</button>
+    </form>
+    <div class="status" id="status"></div>
+  </div>
+
+  <h2>Engines</h2>
+  <div class="panel scroll"><table id="engines"></table></div>
+
+  <h2>Call prices (Monte Carlo through each engine)</h2>
+  <div class="panel scroll"><table id="prices"></table></div>
+  <p class="meta" id="fourier-note"></p>
+
+  <h2>Emitted source</h2>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <pre id="source"></pre>
+  <p class="meta" id="toolchain"></p>
+
+  <footer>
+    One flat ABI for every language: <code>normal_heston_step(x, v, dt, κ, θ, ξ, ρ, z1, z2, out)</code>,
+    <code>out[0] = x_next</code>, <code>out[1] = v_next</code>. The Rust host owns the random numbers, so every engine
+    sees identical inputs; Rust is the reference.
+  </footer>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

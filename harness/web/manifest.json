@@ -1,0 +1,178 @@
+{
+ "kernel": "normal_heston_step",
+ "abi": {
+  "params": [
+   "x",
+   "v",
+   "dt",
+   "kappa",
+   "theta",
+   "xi",
+   "rho",
+   "z1",
+   "z2"
+  ],
+  "outputs": [
+   "x_next",
+   "v_next"
+  ],
+  "rename": {
+   "F": "x"
+  },
+  "brownian": [
+   {
+    "name": "Z",
+    "normal": "z1"
+   },
+   {
+    "name": "W",
+    "normal": "z2"
+   }
+  ]
+ },
+ "order": [
+  "c",
+  "cpp",
+  "fortran",
+  "zig",
+  "rust",
+  "carbon",
+  "wasm"
+ ],
+ "reference": "rust",
+ "labels": {
+  "c": "C",
+  "cpp": "C++",
+  "fortran": "Fortran",
+  "zig": "Zig",
+  "rust": "Rust",
+  "carbon": "Carbon",
+  "wasm": "Direct WASM"
+ },
+ "tiers": {
+  "c": 1,
+  "cpp": 1,
+  "rust": 1,
+  "zig": 1,
+  "fortran": 2,
+  "carbon": 3,
+  "wasm": 4
+ },
+ "engines": {
+  "c": {
+   "wasm": "engines/c.wasm",
+   "source": "src/normal_heston_step.c",
+   "toolchain": "clang 18 --target=wasm32",
+   "bytes": 354
+  },
+  "cpp": {
+   "wasm": "engines/cpp.wasm",
+   "source": "src/normal_heston_step.cpp",
+   "toolchain": "clang++ 18 --target=wasm32",
+   "bytes": 356
+  },
+  "fortran": {
+   "wasm": "engines/fortran.wasm",
+   "source": "src/normal_heston_step.f90",
+   "toolchain": "flang-new 18 (LLVM IR) -> LLVM wasm32 back end",
+   "bytes": 298
+  },
+  "zig": {
+   "wasm": "engines/zig.wasm",
+   "source": "src/normal_heston_step.zig",
+   "toolchain": "zig 0.13 wasm32-freestanding",
+   "bytes": 226
+  },
+  "rust": {
+   "wasm": "engines/rust.wasm",
+   "source": "src/normal_heston_step.rs",
+   "toolchain": "rustc --target wasm32-unknown-unknown",
+   "bytes": 554
+  },
+  "carbon": {
+   "wasm": null,
+   "source": "src/normal_heston_step.carbon",
+   "toolchain": "none available (experimental tier)"
+  },
+  "wasm": {
+   "wasm": "engines/wasm.wasm",
+   "source": "src/normal_heston_step.wat",
+   "toolchain": "direct binary encoder (research/tools/emitters.py); WAT checked by wat2wasm",
+   "bytes": 173
+  }
+ },
+ "defaults": {
+  "x": 100.0,
+  "v": 64.0,
+  "T": 1.0,
+  "kappa": 1.5,
+  "theta": 81.0,
+  "xi": 6.0,
+  "rho": -0.5,
+  "paths": 4000,
+  "steps": 100,
+  "seed": 20260925,
+  "strikes": [
+   80.0,
+   85.0,
+   90.0,
+   95.0,
+   100.0,
+   105.0,
+   110.0,
+   115.0,
+   120.0
+  ]
+ },
+ "source": {
+  "paper": "sidani2014",
+  "sde": [
+   "sidani2014.forward_sde",
+   "sidani2014.variance_sde"
+  ],
+  "correlation": "sidani2014.correlation",
+  "scheme": "euler-full-truncation"
+ },
+ "fourier_reference": {
+  "strikes": [
+   80.0,
+   85.0,
+   90.0,
+   95.0,
+   100.0,
+   105.0,
+   110.0,
+   115.0,
+   120.0
+  ],
+  "prices": [
+   20.065512990955355,
+   15.210989776574518,
+   10.606818757673526,
+   6.534202784018136,
+   3.363216567606316,
+   1.3496435545535626,
+   0.39232307841710234,
+   0.07770791563364998,
+   0.010173370923055813
+  ],
+  "formula": "sidani2014.call"
+ },
+ "ir_sample": {
+  "inputs": {
+   "x": 100.0,
+   "v": 64.0,
+   "dt": 0.01,
+   "kappa": 1.5,
+   "theta": 81.0,
+   "xi": 6.0,
+   "rho": -0.5,
+   "z1": 0.3,
+   "z2": -1.1
+  },
+  "outputs": [
+   99.1178976446697,
+   65.695
+  ]
+ }
+}
