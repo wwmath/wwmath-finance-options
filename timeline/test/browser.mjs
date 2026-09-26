@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const types = { ".html": "text/html", ".js": "text/javascript" };
@@ -64,6 +64,25 @@ await phone.goto(`http://localhost:${port}/`);
 await phone.waitForSelector(".vis-item.vis-box");
 const overflow = await phone.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
 await phone.screenshot({ path: path.join(root, "test", "phone.png"), fullPage: false });
+
+// The single-file build, opened straight from disk as a double-click would: no server,
+// and the only request it may make is for the page itself (fonts aside).
+const single = pathToFileURL(path.join(root, "wwmath-time-machine.html")).href;
+const disk = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
+const loaded = [];
+disk.on("pageerror", (e) => errors.push("single file: " + e));
+disk.on("request", (r) => !external(r.url()) && loaded.push(r.url()));
+await disk.goto(single + "#sidani2014");
+await disk.waitForSelector(".vis-item.vis-box");
+await disk.waitForFunction(() => document.querySelectorAll("#detail mjx-container svg").length > 3, null, { timeout: 30000 });
+await disk.fill("#asof-year", "1900");
+await disk.dispatchEvent("#asof-year", "change");
+await disk.waitForTimeout(150);
+const diskWorks = await disk.locator("#record ol.known li").count();
+const stray = loaded.filter((u) => u.split("#")[0] !== single);
+console.log(`single file (file://): ${diskWorks} works known as of 1900; requests beyond the page: ${stray.length}`);
+if (diskWorks !== 3) failures.push(`single file as of 1900: expected 3 works, saw ${diskWorks}`);
+if (stray.length) failures.push(...stray.map((u) => "single file loaded " + u));
 await browser.close(); server.close();
 if (overflow) failures.push("horizontal page scroll at 390px");
 if (errors.length) failures.push(...errors.map((e) => "page error: " + e));
