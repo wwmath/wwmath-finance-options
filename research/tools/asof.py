@@ -8,7 +8,7 @@
         asof.toml       the work: as-of date + precision, the event on that date, later
                         events, bibliographic record, files
         formulas.toml   the Math AST library entry (only for works we transcribe)
-        *.pdf           the source, when we hold a copy
+        (PDF)           not committed; [files] local_pdf names the verified copy
 
 Dates are 'YYYY-MM-DD' (AD) or 'YYYY-MM-DD BC'. BC years are counted as historians
 count them (there is no year 0); folders carry a BC suffix and chronological order comes

@@ -31,7 +31,7 @@ role = "Arithmetic (normal) Brownian dynamics; the Bachelier option price."
 
 [files]
 formulas = "formulas.toml"
-pdf = "Bachalier_ASENS_1900_3_17__21_0.pdf"
+local_pdf = "Bachalier_ASENS_1900_3_17__21_0.pdf"
 
 [timeline]
 lane = "normal"

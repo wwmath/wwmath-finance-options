@@ -1,0 +1,4 @@
+
+# Papers are not redistributed here (copyright). Keep local copies next to asof.toml;
+# [files] local_pdf names the file each leaf was verified against.
+*.pdf

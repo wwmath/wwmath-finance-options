@@ -123,7 +123,8 @@ def main() -> int:
             "imports": paper.get("imports", []), "imported_by": [],
             "formulas": formulas, "checks": n_checks, "findings": findings,
             "path": rel, "url": f"{GITHUB}/tree/{ref}/{rel}",
-            "pdf": f"{GITHUB}/blob/{ref}/{rel}/{files['pdf']}" if "pdf" in files else None,
+            # the public source (publisher or preprint); the PDFs themselves are not committed
+            "pdf": pub.get("pdf") if str(pub.get("pdf", "")).startswith("http") else None,
             "venue": " ".join(str(pub[k]) for k in ("venue", "volume") if k in pub),
             "pages": pub.get("pages"), "doi": pub.get("doi"), "landing": pub.get("landing"),
             "access": pub.get("access"), "role": pub.get("role"), "notes": pub.get("notes"),

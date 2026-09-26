@@ -23,7 +23,7 @@ role = "Lognormal spot + square-root stochastic variance, no jumps."
 
 [files]
 formulas = "formulas.toml"
-pdf = "Heston-993.pdf"
+local_pdf = "Heston-993.pdf"
 
 [timeline]
 lane = "lognormal"

@@ -22,7 +22,7 @@ role = "SABR generalised with a CEV power gamma on the volatility."
 
 [files]
 formulas = "formulas.toml"
-pdf = "Andreasen-Hudge-ZABR-ssrn-1980726.pdf"
+local_pdf = "Andreasen-Hudge-ZABR-ssrn-1980726.pdf"
 
 [timeline]
 lane = "smile"

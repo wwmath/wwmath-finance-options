@@ -23,7 +23,7 @@ historical record; the `wwm-*` repos are the living implementation.
     asof.toml       as-of date + precision, the event on that date, later events,
                     bibliographic record, files
     formulas.toml   Math AST library entry (the work's formulas as JSON ASTs in TOML)
-    *.pdf           the source, when we hold a copy
+    (PDF)           not committed; [files] local_pdf names the copy it was verified against
 ```
 
 | as-of | leaf | event | formulas |
@@ -38,7 +38,7 @@ historical record; the `wwm-*` repos are the living implementation.
 | 2007-01 | [`2000-99/2000-2009/2007/200701/20070101/Albrecher-Mayer-Schoutens-Tistaert`](2000-99/2000-2009/2007/200701/20070101/Albrecher-Mayer-Schoutens-Tistaert) | Wilmott | branch-safe Heston CF and call (imports Heston 1993) |
 | 2008-01 | [`2000-99/2000-2009/2008/200801/20080101/Schachermayer-Teichmann`](2000-99/2000-2009/2008/200801/20080101/Schachermayer-Teichmann) | Mathematical Finance 18(1) | modern Bachelier call/put (imports Bachelier 1900) |
 | 2011-12-24 | [`2000-99/2010-2019/2011/201112/20111224/Andreasen-Huge`](2000-99/2010-2019/2011/201112/20111224/Andreasen-Huge) | SSRN posting | ZABR: model, eikonal, (5)–(9), ODE (verified pp. 3–9) |
-| 2014-07-09 | [`2000-99/2010-2019/2014/201407/20140709/Sidani`](2000-99/2010-2019/2014/201407/20140709/Sidani) | SSRN | normal Heston SDEs, derived CF and call (PDF still needed) |
+| 2014-07-09 | [`2000-99/2010-2019/2014/201407/20140709/Sidani`](2000-99/2010-2019/2014/201407/20140709/Sidani) | SSRN | normal Heston SDEs, CF and call verbatim (verified; printed ρ-sign slip pinned) |
 | 2015-11-19 | [`2000-99/2010-2019/2015/201511/20151119/Caspers`](2000-99/2010-2019/2015/201511/20151119/Caspers) | SSRN | record only |
 | 2025-03-28 | [`2000-99/2020-2029/2025/202503/20250328/Alos-Bures-Vives`](2000-99/2020-2029/2025/202503/20250328/Alos-Bures-Vives) | arXiv v1 (SIAM version 2026-06-04 recorded as a later event) | model (2.1), (3.1), Theorem 3.2 |
 
@@ -56,6 +56,8 @@ historical record; the `wwm-*` repos are the living implementation.
   (`circa`) date is known, the missing parts are `01` and `asof.toml` says so.
 - **BC dates** use a `BC` suffix on each folder and count years as historians do
   (there is no year 0). Chronological order comes from the date, not the folder name.
+- **Sources are cited, not redistributed.** PDFs are git-ignored; each `asof.toml`
+  links the publisher or preprint and names the local file used for verification.
 - **Unverified works stay out of the tree.** A work with an unverified date or
   identity waits in `research/unfiled.toml`.
 

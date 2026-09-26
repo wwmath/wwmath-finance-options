@@ -16,18 +16,18 @@ Paper ──► papers/<id>.toml ──► Math AST (JSON)
 
 ## The papers: download links
 
-Each source PDF now lives in its as-of leaf (see the root README), and each leaf's
-`asof.toml` holds the full bibliographic record that used to be in
-`bibliography.toml`. The repo is public: Numdam and arXiv allow redistribution, but
-the RFS, JFE and SSRN copies may not.
+The source PDFs are **not in the repo** (it is public, and the RFS, JFE and SSRN copies
+may not be redistributed). Each leaf's `asof.toml` holds the full bibliographic record
+and download links, and `[files] local_pdf` names the exact file the leaf was verified
+against. Put that file next to `asof.toml` to re-verify; `*.pdf` is git-ignored.
 
-| as-of leaf | file | status |
+| as-of leaf | local file (not committed) | status |
 |---|---|---|
 | `1900-99/1900-1909/1900/190003/19000329/Bachelier/` | `Bachalier_ASENS_1900_3_17__21_0.pdf` | verified |
 | `1900-99/1990-1999/1993/199304/19930401/Heston/` | `Heston-993.pdf` | verified |
 | `2000-99/2010-2019/2011/201112/20111224/Andreasen-Huge/` | `Andreasen-Hudge-ZABR-ssrn-1980726.pdf` (preliminary version, Dec 2011) | verified |
 | `2000-99/2020-2029/2025/202503/20250328/Alos-Bures-Vives/` | `Alòs-Burés-Vives-2503.22282v1.pdf` (arXiv v1) | verified against the preprint |
-| unfiled (`unfiled.toml`) | `pdfs/Sidani_2014_1502.02963v2.pdf` | **not Sidani**: Crisóstomo, arXiv:1502.02963 |
+| unfiled (`unfiled.toml`) | `Sidani_2014_1502.02963v2.pdf` | **not Sidani**: Crisóstomo, arXiv:1502.02963 |
 
 Still to upload: Black 1976, Bates 1996, Hagan et al. 2002, Sidani 2014 (and
 optionally Caspers 2015).
@@ -173,7 +173,6 @@ tools/ir.py, emitters.py   Typed Math IR and language emitters (used by harness)
 tools/validate.py     all checks, including the as-of audit
 tools/author_papers.py  DSL source that writes each leaf's formulas.toml
 generated/            F77 sources and validation report (regenerated)
-pdfs/                 unfiled PDFs only
 ```
 
 ## Next steps

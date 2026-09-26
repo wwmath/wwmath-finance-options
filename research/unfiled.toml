@@ -15,5 +15,5 @@ id = "crisostomo2014"
 title = "An Analysis of the Heston Stochastic Volatility Model: Implementation and Calibration using Matlab"
 authors = ["Ricardo Crisostomo"]
 preprint = "https://arxiv.org/abs/1502.02963"
-file = "research/pdfs/Sidani_2014_1502.02963v2.pdf"
+local_pdf = "Sidani_2014_1502.02963v2.pdf"  # not committed
 reason = "Uploaded under a Sidani file name by mistake. PDF is dated December 2014; the arXiv submission day is not yet confirmed. Not Sidani (2014), SSRN 2445328, which is still needed."
