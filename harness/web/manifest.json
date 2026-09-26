@@ -178,7 +178,7 @@
     ],
     "formula": {
      "id": "sidani2014.call",
-     "label": "Sidani Fourier (derived)",
+     "label": "Sidani Fourier (reproduces his Table 1)",
      "prices": [
       20.065512990955355,
       15.210989776574518,

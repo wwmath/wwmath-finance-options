@@ -223,7 +223,9 @@ def run_numeric(lib: Library, p: Paper, check: dict, fr: F77Runner) -> tuple[boo
                     f"(expected in [{lo}, {hi}])")
     ok = close(tval, aval, check)
     msg = f"target={tval:.12g} against={aval:.12g}"
-    if fr.enabled:
+    if fr.enabled and check.get("f77") is False:
+        msg += f" | f77 skipped: {check.get('f77_reason', 'no reason given')}"
+    elif fr.enabled:
         name = f"{p.id}/{check['id']}"
         ft = fr.run(tq, tnode, env, name + "-target")
         # the F77 build must agree with the reference interpreter to the check's own

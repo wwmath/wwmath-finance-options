@@ -1,4 +1,4 @@
-C     sidani2014/bachelier-limit-target
+C     sidani2014/table1-derived-K-0.0005-target
 C     Generated from the Math AST by research/tools/f77.py
 C     Inputs (read from standard input in this order):
 C       X(1) = x_0

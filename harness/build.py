@@ -126,11 +126,11 @@ def references(lib: Library, name: str, d: dict) -> dict:
     strikes = d["strikes"]
     out: dict = {"strikes": strikes}
     if name == "normal_heston_step":
-        out["formula"] = {"id": "sidani2014.call", "label": "Sidani Fourier (derived)",
+        out["formula"] = {"id": "sidani2014.call", "label": "Sidani Fourier (reproduces his Table 1)",
                           "prices": [formula(lib, "sidani2014.call", {
-                              "F": d["x"], "K": K, "v": d["v"], "T": d["T"], "kappa": d["kappa"],
-                              "theta": d["theta"], "xi": d["xi"], "rho": d["rho"]})
-                              for K in strikes]}
+                              "x_0": d["x"], "K": K, "nu_0": d["v"], "tau": d["T"],
+                              "kappa": d["kappa"], "theta": d["theta"], "omega": d["xi"],
+                              "rho": d["rho"]}) for K in strikes]}
         out["quantlib"] = None
     elif name == "heston_step":
         out["formula"] = {"id": "albrecher2007.call_trap", "label": "Heston (10), little-trap CF",

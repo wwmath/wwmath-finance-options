@@ -24,7 +24,8 @@ label = "Normal Heston (Sidani 2014)"
 paper = "sidani2014"
 sde = ["sidani2014.forward_sde", "sidani2014.variance_sde"]
 correlation = "sidani2014.correlation"
-rename = { F = "x" }
+# Sidani writes nu for the variance and omega for its volatility; the ABI keeps v and xi
+rename = { nu = "v", omega = "xi" }
 params = ["kappa", "theta", "xi", "rho"]
 randoms = [
   { name = "z1", kind = "normal", drives = "Z" },

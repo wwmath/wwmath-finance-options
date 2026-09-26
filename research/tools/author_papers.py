@@ -783,76 +783,173 @@ def zabr():
 # ---------------------------------------------------------------------------
 
 def sidani():
-    Fw, v, t, T, K = sym("F"), sym("v"), sym("t"), sym("T"), sym("K")
-    kap, th, xi, rho, u = sym("kappa"), sym("theta"), sym("xi"), sym("rho"), sym("u")
-    core = sub(kap, mul(I, rho, xi, u))
-    D, G = apply("D", u), apply("G", u)
-    eDT = exp(mul(neg(D), T))
+    """Sidani (2014), verbatim notation: x forward, nu variance, omega vol of variance."""
+    x, nu, t, tau, K = sym("x"), sym("nu"), sym("t"), sym("tau"), sym("K")
+    kap, th, om, rho = sym("kappa"), sym("theta"), sym("omega"), sym("rho")
+    x0, nu0, u, xi, eps = sym("x_0"), sym("nu_0"), sym("u"), sym("xi"), sym("epsilon")
+    V = lambda pg, eqn=None, **kw: src(eqn, pg, verified=True, **kw)  # noqa: E731
+    # --- the paper's closed form, p. 4, as printed ---------------------------------------
+    a_u = sub(kap, mul(rho, om, u, I))                        # kappa - rho omega u i
+    s_, g_ = apply("s", u), apply("g", u)
+    Dt = lambda tt: mul(div(sub(a_u, s_), pow_(om, 2)),     # noqa: E731
+                        div(sub(1, exp(mul(neg(s_), tt))), sub(1, mul(g_, exp(mul(neg(s_), tt))))))
+    Ct = lambda tt: mul(div(mul(kap, th), pow_(om, 2)), sub(mul(sub(a_u, s_), tt), mul(  # noqa: E731
+        2, log(div(sub(mul(g_, exp(mul(neg(s_), tt))), 1), sub(g_, 1))))))
+    # --- the same model derived independently here (what Table 1 was computed with) -------
+    core = sub(kap, mul(I, rho, om, u))
+    Dw, Gw = apply("s_w", u), apply("g_w", u)
+    eDT = exp(mul(neg(Dw), tau))
     der = dict(fidelity="derived",
-               ref="Derived here from the affine structure of the model; compare with Sidani's "
-                   "closed form once the PDF is in hand")
+               ref="Derived independently (wwmath, 2026) from model (1) by the affine method; "
+                   "reproduces Sidani's Table 1")
+    # payoff transform integrand for check (3)
+    zc = add(neg(mul(I, eps)), xi)                           # -i eps + xi
     return {
-        "paper": {"id": "sidani2014", "short": "Sidani 2014", "transcription_status": "derived-pending-pdf"},
+        "paper": {"id": "sidani2014", "short": "Sidani 2014", "transcription_status": "core-complete"},
         "symbols": [
-            S("F", "state", "Forward price (normal dynamics)"),
-            S("v", "state", "Instantaneous variance", domain="nonnegative"),
-            S("t", "time", "Calendar time"),
-            S("T", "time", "Time to expiry"),
-            S("K", "parameter", "Strike"),
-            S("kappa", "parameter", "Mean-reversion speed"),
-            S("theta", "parameter", "Long-run variance"),
-            S("xi", "parameter", "Volatility of variance"),
-            S("rho", "parameter", "Correlation"),
-            S("W", "brownian_motion", "Brownian motion driving F"),
-            S("Z", "brownian_motion", "Brownian motion driving v"),
-            S("u", "integration_variable", "Fourier variable"),
+            S("x", "state", "Forward price of the asset (normal dynamics; may be negative)"),
+            S("nu", "state", "Variance of changes in the level of x", domain="nonnegative"),
+            S("t", "time", "Time"),
+            S("tau", "time", "Time to expiry"),
+            S("K", "parameter", "Strike (may be zero or negative)"),
+            S("kappa", "parameter", "Speed of mean reversion of the variance"),
+            S("theta", "parameter", "Long-term limit of the variance"),
+            S("omega", "parameter", "Volatility of the variance"),
+            S("rho", "parameter", "Correlation of W and Z"),
+            S("W", "brownian_motion", "Brownian motion driving x (forward measure)"),
+            S("Z", "brownian_motion", "Brownian motion driving nu"),
+            S("x_0", "parameter", "Forward price today"),
+            S("nu_0", "parameter", "Variance today"),
+            S("x_tau", "variable", "Forward price at expiry"),
+            S("u", "variable", "Fourier variable"),
+            S("xi", "integration_variable", "Real part of the Fourier variable -i epsilon + xi"),
+            S("epsilon", "parameter", "Small positive damping, epsilon > 0 (paper uses 1e-4)"),
+            S("c", "variable", "Forward price of the call"),
+            S("P", "function", "Transition density P(t, x, nu)"),
+            S("Phi", "function", "Fourier transform of P in x"),
+            S("C", "function", "C(t) of the Ansatz"),
+            S("D", "function", "D(t) of the Ansatz"),
         ],
         "formulas": [
-            F("sidani2014.forward_sde", "Normal forward dynamics: Heston with sqrt(v) not sqrt(v) S",
-              "sde", sde(Fw, (sqrt(v), sym("W"))), src(fidelity="restated"),
-              notes="The only difference from Heston's eq. (1) is the missing factor S."),
-            F("sidani2014.variance_sde", "Variance dynamics (as Heston)", "sde",
-              sde(v, (mul(kap, sub(th, v)), t), (mul(xi, sqrt(v)), sym("Z"))),
-              src(fidelity="restated")),
+            F("sidani2014.forward_sde", "Normal forward dynamics", "sde",
+              sde(x, (sqrt(nu), sym("W"))), V(2, "(1)"),
+              notes="Differs from Heston's (1) only by the missing factor x: normal, not lognormal."),
+            F("sidani2014.variance_sde", "Square-root variance (as Heston)", "sde",
+              sde(nu, (mul(kap, sub(th, nu)), t), (mul(om, sqrt(nu)), sym("Z"))), V(2, "(1)")),
             F("sidani2014.correlation", "Brownian correlation", "correlation",
-              eq(mul(d(sym("W")), d(sym("Z"))), mul(rho, d(t))), src(fidelity="restated")),
-            F("sidani2014.cf", "Characteristic function of F_T - F", "characteristic_function",
-              eq(apply("phi", u), exp(add(apply("A", u), mul(apply("B", u), v)))), src(**der)),
-            F("sidani2014.A", "A(u)", "definition",
-              eq(apply("A", u), mul(kap, th, sub(
-                  neg(div(mul(pow_(u, 2), T), add(core, D))),
-                  mul(div(2, pow_(xi, 2)), log(div(sub(1, mul(G, eDT)), sub(1, G))))))),
+              eq(mul(d(sym("W")), d(sym("Z"))), mul(rho, d(t))), V(2, "(1)")),
+            F("sidani2014.price_def", "Call price under the forward measure", "identity",
+              eq(sym("c"), expect(call("max", sub(sym("x_tau"), K), 0))), V(2, "(2)"),
+              defines=False),
+            F("sidani2014.payoff_transform", "Fourier transform of the call payoff", "identity",
+              eq(integral(mul(exp(neg(mul(I, zc, sym("x_tau")))), call("max", sub(sym("x_tau"), K), 0)),
+                          "x_tau", neg(INF), INF),
+                 neg(div(exp(mul(sub(neg(eps), mul(I, xi)), K)), pow_(zc, 2)))),
+              V(2, "(3)"), defines=False, notes="Holds for every epsilon > 0."),
+            F("sidani2014.phi_def", "Fourier transform of the density of x at expiry", "identity",
+              eq(apply("phi", u), expect(exp(neg(mul(I, u, sym("x_tau")))))), V(2),
+              defines=False, notes="phi(-u) is then the characteristic function (p. 2)."),
+            F("sidani2014.c_printed", "Call price, eq. (6) as printed", "price",
+              eq(sym("c_printed"), mul(div(1, PI), integral(Re(div(
+                  mul(apply("phi", sub(mul(I, eps), xi)), neg(exp(mul(sub(neg(eps), mul(I, xi)), K)))),
+                  pow_(zc, 2))), "xi", 0, INF))), V(3, "(6)"),
+              notes="With phi as printed on p. 4 this prices the model with correlation -rho: see "
+                    "the table1-* checks. The inversion itself is right (it agrees at rho = 0)."),
+            F("sidani2014.phi", "phi(u) = Phi(tau, u, nu_0), as printed", "characteristic_function",
+              eq(apply("phi", u), exp(add(apply("C", u), mul(apply("D", u), nu0),
+                                          neg(mul(I, u, x0))))), V(4),
+              notes="Ansatz Phi(t, u, nu) = exp(C(t) + D(t) nu - i u x_0), evaluated at t = tau."),
+            F("sidani2014.D", "D(t), as printed, at t = tau", "definition",
+              eq(apply("D", u), Dt(tau)), V(4)),
+            F("sidani2014.C", "C(t), as printed, at t = tau", "definition",
+              eq(apply("C", u), Ct(tau)), V(4)),
+            F("sidani2014.g", "g, as printed", "definition",
+              eq(g_, div(sub(a_u, s_), add(a_u, s_))), V(4)),
+            F("sidani2014.s", "s, as printed", "definition",
+              eq(s_, sqrt(add(pow_(a_u, 2), mul(pow_(om, 2), pow_(u, 2))))), V(4)),
+            # ---- independent derivation ----
+            F("sidani2014.phi_w", "Characteristic function of x_tau - x_0 (derived)",
+              "characteristic_function",
+              eq(apply("phi_w", u), exp(add(apply("A_w", u), mul(apply("B_w", u), nu0)))), src(**der)),
+            F("sidani2014.A_w", "A(u) (derived)", "definition",
+              eq(apply("A_w", u), mul(kap, th, sub(
+                  neg(div(mul(pow_(u, 2), tau), add(core, Dw))),
+                  mul(div(2, pow_(om, 2)), log(div(sub(1, mul(Gw, eDT)), sub(1, Gw))))))),
               src(**der),
-              notes="Uses core - D = -xi^2 u^2 / (core + D) to avoid cancellation as xi -> 0."),
-            F("sidani2014.B", "B(u)", "definition",
-              eq(apply("B", u), neg(div(mul(pow_(u, 2), sub(1, eDT)),
-                                        mul(add(core, D), sub(1, mul(G, eDT)))))), src(**der)),
-            F("sidani2014.D", "D(u)", "definition",
-              eq(D, sqrt(add(pow_(core, 2), mul(pow_(xi, 2), pow_(u, 2))))), src(**der),
+              notes="Uses core - s = -omega^2 u^2 / (core + s) to avoid cancellation as omega -> 0."),
+            F("sidani2014.B_w", "B(u) (derived)", "definition",
+              eq(apply("B_w", u), neg(div(mul(pow_(u, 2), sub(1, eDT)),
+                                          mul(add(core, Dw), sub(1, mul(Gw, eDT)))))), src(**der)),
+            F("sidani2014.s_w", "s(u) (derived)", "definition",
+              eq(Dw, sqrt(add(pow_(core, 2), mul(pow_(om, 2), pow_(u, 2))))), src(**der),
               notes="Heston's d with u^2 in place of u^2 + iu: no convexity term for normal dynamics."),
-            F("sidani2014.G", "G(u)", "definition",
-              eq(G, neg(div(mul(pow_(xi, 2), pow_(u, 2)), pow_(add(core, D), 2)))), src(**der),
-              notes="(core - D)/(core + D), rationalised."),
-            F("sidani2014.call", "Undiscounted call price", "price",
-              eq(sym("C"), add(div(sub(Fw, K), 2), mul(div(1, PI), integral(
-                  div(sub(1, Re(mul(exp(mul(I, u, sub(Fw, K))), apply("phi", u)))), pow_(u, 2)),
+            F("sidani2014.g_w", "g(u) (derived)", "definition",
+              eq(Gw, neg(div(mul(pow_(om, 2), pow_(u, 2)), pow_(add(core, Dw), 2)))), src(**der),
+              notes="(core - s)/(core + s), rationalised."),
+            F("sidani2014.call", "Call price (derived; reproduces Table 1)", "price",
+              eq(sym("c_w"), add(div(sub(x0, K), 2), mul(div(1, PI), integral(
+                  div(sub(1, Re(mul(exp(mul(I, u, sub(x0, K))), apply("phi_w", u)))), pow_(u, 2)),
                   "u", 0, INF)))), src(**der),
               notes="From E[Y^+] = E[Y]/2 + E|Y|/2 and E|Y| = (2/pi) int_0^inf (1 - Re phi_Y(u))/u^2 du."),
         ],
         "checks": [
+            *[{"id": f"table1-derived-K{kk}", "kind": "compare",
+               "description": f"Derived price reproduces Sidani's Table 1 (formula column) at K = {kk}",
+               "target": "sidani2014.call", "expected": ev,
+               "inputs": {"x_0": -0.001, "K": kk, "nu_0": 0.09, "tau": 1.0, "kappa": 1.0,
+                          "theta": 0.5 * 0.001 ** 2, "omega": 0.25, "rho": -0.9},
+               "abs_tol": 1e-5}
+              for kk, ev in ((-0.0005, 0.09223), (0.0, 0.09194), (0.0005, 0.09166))],
+            {"id": "table1-printed-finding", "kind": "compare",
+             "description": "Documented finding: (6) with phi as printed misses Table 1 at K = 0 by "
+                            "1.6e-4 (it prices correlation -rho); the derived formula matches Table 1",
+             "target": "sidani2014.c_printed", "against": "sidani2014.call",
+             "inputs": {"x_0": -0.001, "K": 0.0, "nu_0": 0.09, "tau": 1.0, "kappa": 1.0,
+                        "theta": 0.5 * 0.001 ** 2, "omega": 0.25, "rho": -0.9, "epsilon": 1e-4},
+             "expect_difference": [1.60e-4, 1.67e-4]},
+            {"id": "table1-printed-agrees-at-rho-zero", "kind": "compare",
+             "description": "At rho = 0 the printed (6) and the derived formula agree: the damped "
+                            "inversion, C, D, g and s are right; only the rho term's sign differs",
+             "target": "sidani2014.c_printed", "against": "sidani2014.call",
+             "inputs": {"x_0": -0.001, "K": 0.0005, "nu_0": 0.09, "tau": 1.0, "kappa": 1.0,
+                        "theta": 0.5 * 0.001 ** 2, "omega": 0.25, "rho": 0.0, "epsilon": 1e-4},
+             "rel_tol": 1e-8, "f77": False,
+             "f77_reason": "the epsilon = 1e-4 damping puts an O(epsilon)-wide peak at xi = 0 that "
+                           "the F77 runtime's fixed-panel Gauss-Legendre rule cannot resolve; "
+                           "Python (adaptive QUADPACK) and C++ (adaptive Gauss-Kronrod) can"},
+            {"id": "riccati-9b", "kind": "sympy_identity",
+             "description": "Printed D(t) solves (9b): D' - omega^2 D^2 / 2 + (kappa - rho omega u i) D + u^2/2 = 0",
+             "target_ast": add(sub({"op": "Derivative", "expr": Dt(t), "var": t},
+                                   mul(half, pow_(om, 2), pow_(Dt(t), 2))),
+                               mul(a_u, Dt(t)), mul(half, pow_(u, 2))),
+             "against_ast": num(0)},
+            {"id": "riccati-9a", "kind": "sympy_identity",
+             "description": "Printed C(t) solves (9a): C' - kappa theta D = 0",
+             "target_ast": sub({"op": "Derivative", "expr": Ct(t), "var": t}, mul(kap, th, Dt(t))),
+             "against_ast": num(0)},
+            {"id": "riccati-initial", "kind": "sympy_identity",
+             "description": "D(0) = C(0) = 0",
+             "target_ast": add(Dt(num(0)), Ct(num(0))), "against_ast": num(0)},
+            *[{"id": f"payoff-transform-{part}", "kind": "compare",
+               "description": f"(3) holds: {part} part at epsilon = 0.5, xi = 1.3, K = 0.2",
+               "target_ast": integral(call(part, mul(exp(neg(mul(I, zc, sym("x_tau")))),
+                                                     sub(sym("x_tau"), K))), "x_tau", K, INF),
+               "against_ast": call(part, neg(div(exp(mul(sub(neg(eps), mul(I, xi)), K)), pow_(zc, 2)))),
+               "inputs": {"epsilon": 0.5, "xi": 1.3, "K": 0.2}, "abs_tol": 1e-10}
+              for part in ("Re", "Im")],
             {"id": "bachelier-limit", "kind": "compare",
-             "description": "xi -> 0 with v = theta recovers the Bachelier price",
+             "description": "omega -> 0 with nu = theta recovers the Bachelier price",
              "target": "sidani2014.call", "against": "bachelier1900.call",
-             "bind": {"sigma": sqrt(th)},
-             "inputs": {"F": 100.0, "K": 104.0, "v": 64.0, "T": 1.0, "kappa": 1.0, "theta": 64.0,
-                        "xi": 0.01, "rho": 0.0}, "rel_tol": 1e-5},
+             "bind": {"sigma": sqrt(th), "F": x0, "T": tau},
+             "inputs": {"x_0": 100.0, "K": 104.0, "nu_0": 64.0, "tau": 1.0, "kappa": 1.0,
+                        "theta": 64.0, "omega": 0.01, "rho": 0.0}, "rel_tol": 1e-5},
             {"id": "monte-carlo", "kind": "monte_carlo",
-             "description": "Euler simulation of the normal-SV SDEs reproduces the Fourier price",
+             "description": "Euler simulation of (1) reproduces the derived price",
              "sde": ["sidani2014.forward_sde", "sidani2014.variance_sde"],
-             "correlation": ["sidani2014.correlation"], "time": "t", "horizon": "T",
-             "payoff_ast": mx(sub(Fw, K), 0), "against": "sidani2014.call",
-             "inputs": {"F": 100.0, "K": 105.0, "v": 64.0, "T": 1.0, "kappa": 1.5,
-                        "theta": 81.0, "xi": 6.0, "rho": -0.5},
+             "correlation": ["sidani2014.correlation"], "time": "t", "horizon": "tau",
+             "payoff_ast": mx(sub(x, K), 0), "against": "sidani2014.call",
+             "inputs": {"x": 100.0, "nu": 64.0, "x_0": 100.0, "nu_0": 64.0, "K": 105.0, "tau": 1.0,
+                        "kappa": 1.5, "theta": 81.0, "omega": 6.0, "rho": -0.5},
              "paths": 200000, "steps": 250, "seed": 6, "abs_tol": 0.03},
         ],
     }

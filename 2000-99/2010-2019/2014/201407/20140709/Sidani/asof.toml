@@ -9,7 +9,7 @@ authors = ["Majed Sidani"]
 [as_of]
 date = "2014-07-09"
 precision = "day"
-event = "Posted to SSRN (abstract 2445328)"
+event = "Posted to SSRN (abstract 2445328); paper dated July 9, 2014; written while a consultant at Risk Evolution, LLP"
 
 [publication]
 year = 2014
@@ -21,3 +21,4 @@ role = "Normal (arithmetic) Heston: normal spot + square-root variance, no jumps
 
 [files]
 formulas = "formulas.toml"
+pdf = "Sidani-Normal-ssrn-2445328.pdf"
