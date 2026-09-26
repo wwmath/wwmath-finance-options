@@ -1,4 +1,4 @@
-"""Validate the Math AST library in research/papers/*.toml.
+"""Validate the Math AST library: every formulas.toml in the as-of tree (research/tools/asof.py).
 
 For every paper file this checks that:
   1. each `ast` is valid JSON and a well-formed Math AST;
@@ -36,6 +36,7 @@ from mathast import (  # noqa: E402
 )
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+REPO = os.path.dirname(ROOT)
 GEN = os.path.join(ROOT, "generated")
 
 
@@ -65,10 +66,56 @@ class Paper:
 
 
 class Library:
+    """Every formulas.toml in the as-of tree, with imports resolved.
+
+    A leaf that imports earlier leaves sees their symbols and definitions (its own take
+    precedence); formulas still belong to the leaf that states them.
+    """
+
     def __init__(self):
-        self.papers = {p.id: p for p in (Paper(x) for x in
-                                         sorted(glob.glob(os.path.join(ROOT, "papers", "*.toml"))))}
+        import asof
+        self.index = asof.leaves()
+        self.papers = {}
+        for wid, leaf in self.index.items():
+            files = leaf["asof"].get("files", {})
+            if "formulas" in files:
+                p = Paper(os.path.join(leaf["dir"], files["formulas"]))
+                if p.id != wid:
+                    raise ValueError(f"{p.path}: paper id {p.id} != leaf work id {wid}")
+                p.as_of = leaf["asof"]["as_of"]["date"]
+                self.papers[wid] = p
+        for p in self.papers.values():
+            for imp in self._import_chain(p.id):
+                q = self.papers[imp]
+                p.symbols = {**q.symbols, **p.symbols}
+                p.defs.update({k: v for k, v in q.defs.items() if k not in p.defs})
         self.formula_owner = {fid: p for p in self.papers.values() for fid in p.formulas}
+
+    def _import_chain(self, wid: str, seen: frozenset = frozenset()) -> list[str]:
+        out = []
+        for imp in self.papers[wid].doc["paper"].get("imports", []):
+            if imp in seen:
+                raise ValueError(f"import cycle through {imp}")
+            out += [imp] + self._import_chain(imp, seen | {wid})
+        return out
+
+    def asof_audit(self) -> tuple[list[str], list[str]]:
+        """(errors, exceptions): imports must not point forward in time; formulas that
+        use a later work are listed as exceptions to be resolved from the original PDF."""
+        errors, exceptions = [], []
+        for p in self.papers.values():
+            for imp in p.doc["paper"].get("imports", []):
+                if self.papers[imp].as_of > p.as_of:
+                    errors.append(f"{p.id} ({p.as_of}) imports later work {imp} "
+                                  f"({self.papers[imp].as_of})")
+            for fid, f in p.formulas.items():
+                for w in f.get("uses_later_work", []):
+                    later = self.index[w]["asof"]["as_of"]["date"]
+                    if later > p.as_of:
+                        exceptions.append(f"{fid} ({p.as_of}) uses {w} ({later})")
+                    else:
+                        errors.append(f"{fid}: uses_later_work names {w}, which is not later")
+        return errors, exceptions
 
     def formula(self, fid: str) -> tuple[Paper, dict]:
         p = self.formula_owner[fid]
@@ -480,6 +527,16 @@ def main() -> int:
                 print(f"  TAXONOMY FAIL {m['id']}: {sid} is not an SDE formula")
                 failures += 1
     print(f"\ntaxonomy: {len(tax['models'])} models checked")
+    errors, exceptions = lib.asof_audit()
+    for e in errors:
+        print(f"  AS-OF FAIL {e}")
+    failures += len(errors)
+    print(f"as-of audit: {len(lib.papers)} leaves in date order, "
+          f"{len(errors)} error(s), {len(exceptions)} documented exception(s)")
+    for e in exceptions:
+        print(f"  as-of exception: {e}")
+    rows += [("as-of", e, "audit", "EXCEPTION", "uses later work; resolve from the original PDF")
+             for e in exceptions]
     if fr.enabled:
         print(f"\nF77: compiled and ran {fr.count} generated programs "
               f"(sources in {os.path.relpath(os.path.join(GEN, 'f77'), os.getcwd())})")

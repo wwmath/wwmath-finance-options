@@ -28,7 +28,7 @@ id = "ql.bachelierBlackFormula"
 adapter = "bachelier_formula"
 function = "QuantLib::bachelierBlackFormula(Option::Type, Real strike, Real forward, Real stdDev, Real discount)"
 files = ["ql/pricingengines/blackformula.hpp", "ql/pricingengines/blackformula.cpp:705"]
-compares = ["bachelier1900.call", "bachelier1900.put"]
+compares = ["schachermayer2008.call", "schachermayer2008.put"]
 notes = "discount * (stdDev * phi'(h) + d * Phi(h)), d = (F - K) * sign, h = d / stdDev."
 
 [[oracles]]

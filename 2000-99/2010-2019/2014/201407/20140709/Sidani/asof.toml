@@ -1,0 +1,23 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "sidani2014"
+name = "Sidani"
+title = "A Normal Stochastic Volatility Model"
+authors = ["Majed Sidani"]
+
+[as_of]
+date = "2014-07-09"
+precision = "day"
+event = "Posted to SSRN (abstract 2445328)"
+
+[publication]
+year = 2014
+venue = "SSRN working paper 2445328"
+doi = "10.2139/ssrn.2445328"
+landing = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2445328"
+access = "free-registration"
+role = "Normal (arithmetic) Heston: normal spot + square-root variance, no jumps."
+
+[files]
+formulas = "formulas.toml"

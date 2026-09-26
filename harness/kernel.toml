@@ -1,7 +1,7 @@
 # Cross-language conformance kernels.
 #
 # No kernel is hand-written in any language: each is lowered from its paper's SDE
-# ASTs (research/papers/*.toml) through the Typed Math IR (Euler, full truncation),
+# ASTs (formulas.toml in the as-of tree) through the Typed Math IR (Euler, full truncation),
 # then emitted to every language from that one IR.
 #
 # ABI for every kernel and language:

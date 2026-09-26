@@ -66,10 +66,11 @@ function parameter, it must itself be written as a function (`d(u)`, not `d`).
 
 A correlation is an `Eq` between differentials: `dz_1 dz_2 = ρ dt`.
 
-## TOML entry layout (`papers/<id>.toml`)
+## TOML entry layout (`formulas.toml` in an as-of leaf)
 
 ```toml
-[paper]                 # id, short name, transcription_status, bibliography ids
+[paper]                 # id (= the leaf's work id), short name, transcription_status,
+                        #   title, as_of, imports (earlier leaves whose definitions it uses)
 [[symbols]]             # name, kind, description, optional domain / intensity
 [[formulas]]            # id, name, kind, source{equation, page, fidelity,
                         #   verified_against_pdf}, depends_on, latex, ast
@@ -83,6 +84,11 @@ A correlation is an `Eq` between differentials: `dz_1 dz_2 = ρ dt`.
 * `modern-restatement`: a modern textbook form of the paper's result;
 * `derived`: derived by us from the paper's model and marked for comparison
   with the paper.
+
+A formula may carry `uses_later_work = ["<work id>"]` when it cannot yet be
+separated from a later work (for example Bates' CF, written in the 2007 little-trap
+form until the Bates PDF is transcribed). The validator lists these as as-of
+exceptions; an `imports` entry that points forward in time is an error.
 
 `verified_against_pdf` stays `false` until someone has compared the entry
 line by line against the PDF.

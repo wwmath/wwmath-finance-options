@@ -6,7 +6,7 @@ Each target is compiled to its own WASM module and must reproduce the
 reference **bit for bit**.
 
 ```
-Domain AST   research/papers/{sidani2014,heston1993,bates1996,hagan2002}.toml  SDEs
+Domain AST   as-of leaves: Sidani 2014, Heston 1993, Bates 1996, Hagan 2002  SDEs
    ↓         Euler full-truncation scheme      research/tools/ir.py
 Typed Math IR                                   generated/kernels.ir.json
    ├── C            clang 18 --target=wasm32                     Tier 1
@@ -26,7 +26,7 @@ step. Every language module exports all four.
 | kernel | from | ABI (then `output_ptr`) | references on the page |
 |---|---|---|---|
 | `normal_heston_step` | `sidani2014` SDEs | `x, v, dt, kappa, theta, xi, rho, z1, z2` | Sidani Fourier price (derived CF); QuantLib has no normal-Heston engine |
-| `heston_step` | `heston1993` (1), (4) | `s, v, dt, r, kappa, theta, sigma, rho, z1, z2` | `heston1993.call_trap`, QuantLib `AnalyticHestonEngine` |
+| `heston_step` | `heston1993` (1), (4) | `s, v, dt, r, kappa, theta, sigma, rho, z1, z2` | `albrecher2007.call_trap`, QuantLib `AnalyticHestonEngine` |
 | `bates_step` | `bates1996` SDEs + jumps | `s, v, dt, b, lambdastar, kbarstar, alpha, betastar, sigma_v, rho, z1, z2, dj` | `bates1996.call`, QuantLib `BatesEngine` |
 | `sabr_step` | `hagan2002` (2.13) | `f, alpha, dt, beta, nu, rho, z1, z2` | Hagan (2.17)/(2.18) → Black-76, QuantLib `sabrVolatility` → `blackFormula` |
 

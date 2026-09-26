@@ -16,18 +16,18 @@ Paper ──► papers/<id>.toml ──► Math AST (JSON)
 
 ## The papers: download links
 
-Source PDFs live in `pdfs/`, which the repo now tracks (they were uploaded
-through GitHub). If the repository is or becomes public, check each publisher's
-terms: Numdam and arXiv allow redistribution; RFS, JFE and SSRN copies may not.
-`bibliography.toml` holds the full metadata.
+Each source PDF now lives in its as-of leaf (see the root README), and each leaf's
+`asof.toml` holds the full bibliographic record that used to be in
+`bibliography.toml`. The repo is public: Numdam and arXiv allow redistribution, but
+the RFS, JFE and SSRN copies may not.
 
-| file in `pdfs/` | paper | status |
+| as-of leaf | file | status |
 |---|---|---|
-| `Bachalier_ASENS_1900_3_17__21_0.pdf` | `bachelier1900` | verified |
-| `Heston-993.pdf` | `heston1993` | verified |
-| `Andreasen-Hudge-ZABR-ssrn-1980726.pdf` | `andreasen2011` (Preliminary Version, Dec 2011) | verified |
-| `Alòs-Burés-Vives-2503.22282v1.pdf` | `alos2026` (arXiv v1 preprint) | verified against the preprint |
-| `Sidani_2014_1502.02963v2.pdf` | **not Sidani**: Crisóstomo, *An Analysis of the Heston Stochastic Volatility Model: Implementation and Calibration using Matlab*, arXiv:1502.02963 | Sidani's paper is SSRN 2445328 and is still needed |
+| `1900-99/1900-1909/1900/190003/19000329/Bachelier/` | `Bachalier_ASENS_1900_3_17__21_0.pdf` | verified |
+| `1900-99/1990-1999/1993/199304/19930401/Heston/` | `Heston-993.pdf` | verified |
+| `2000-99/2010-2019/2011/201112/20111224/Andreasen-Huge/` | `Andreasen-Hudge-ZABR-ssrn-1980726.pdf` (preliminary version, Dec 2011) | verified |
+| `2000-99/2020-2029/2025/202503/20250328/Alos-Bures-Vives/` | `Alòs-Burés-Vives-2503.22282v1.pdf` (arXiv v1) | verified against the preprint |
+| unfiled (`unfiled.toml`) | `pdfs/Sidani_2014_1502.02963v2.pdf` | **not Sidani**: Crisóstomo, arXiv:1502.02963 |
 
 Still to upload: Black 1976, Bates 1996, Hagan et al. 2002, Sidani 2014 (and
 optionally Caspers 2015).
@@ -119,9 +119,9 @@ test oracle; the ASTs stay sourced from the papers.
 | our formula | QuantLib | cases | max rel. diff |
 |---|---|---|---|
 | `black1976.call` / `.put` | `blackFormula` (`ql/pricingengines/blackformula.cpp:59`) | 9 + 9 | 3e-13 |
-| `bachelier1900.call` / `.put` | `bachelierBlackFormula` (`blackformula.cpp:705`) | 6 + 6 | 4e-12 |
+| `schachermayer2008.call` / `.put` | `bachelierBlackFormula` (`blackformula.cpp:705`) | 6 + 6 | 4e-12 |
 | `hagan2002.sigma_B` (2.17) | `unsafeSabrLogNormalVolatility` (`ql/termstructures/volatility/sabr.cpp:37`) | 48 | 9e-16 |
-| `heston1993.call_trap` | `AnalyticHestonEngine` | 27 | 3e-11 |
+| `albrecher2007.call_trap` | `AnalyticHestonEngine` | 27 | 3e-11 |
 | `heston1993.call` (eq. 17 as printed) | `AnalyticHestonEngine` | 24 | 3e-11 |
 | `bates1996.call` | `BatesEngine` (`batesengine.cpp:39`) | 18 | 6e-14 |
 
@@ -129,7 +129,7 @@ test oracle; the ASTs stay sourced from the papers.
 verbatim, and it takes a principal-branch complex log. At κ = 1.5, σ = 0.3,
 ρ = −0.7, τ = 2, the log's argument crosses the branch cut near φ ≈ 22. The
 printed formula then misprices by up to 0.8% (13.733 vs 13.797 at the money).
-`heston1993.call_trap`, which uses the Albrecher et al. (2007) form, matches
+`albrecher2007.call_trap`, which uses the Albrecher et al. (2007) form, matches
 QuantLib to 1e-13 there. Use `call_trap` for pricing. The `little-heston-trap-finding`
 check pins the size of the discrepancy, so a regression in either form shows up.
 
@@ -158,16 +158,22 @@ separate ATM formula.
 ## Layout
 
 ```
-bibliography.toml     paper metadata + download links
-papers/<id>.toml      one Math AST library entry per paper
+../<century>/<decade>/<year>/<yyyymm>/<yyyymmdd>/<Name>/   the as-of tree (root README)
+    asof.toml          as-of date, precision, event, later events, bibliography, files
+    formulas.toml      Math AST library entry (works we transcribe)
+unfiled.toml          works not yet placed: unverified date or identity
 models/taxonomy.toml  models as compositions: underlying × volatility × jumps × correlation
+references/           QuantLib oracle provenance
 schema/math_ast.md    JSON node reference and TOML entry layout
+tools/asof.py         leaf paths and discovery
 tools/mathast.py      AST DSL, LaTeX, SymPy bridge, reference interpreter
 tools/f77.py          AST → FORTRAN 77 lowering + runtime (WWQUAD, WWNCDF)
-tools/validate.py     the checks above; writes generated/validation_report.md
-tools/author_papers.py  DSL source used to write papers/*.toml (re-run after edits)
+tools/cpp.py          AST → C++17 (used by quantlib-conformance)
+tools/ir.py, emitters.py   Typed Math IR and language emitters (used by harness)
+tools/validate.py     all checks, including the as-of audit
+tools/author_papers.py  DSL source that writes each leaf's formulas.toml
 generated/            F77 sources and validation report (regenerated)
-pdfs/                 your downloaded PDFs (git-ignored)
+pdfs/                 unfiled PDFs only
 ```
 
 ## Next steps

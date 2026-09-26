@@ -1,4 +1,4 @@
-"""Authoring source for research/papers/*.toml.
+"""Authoring source for the formulas.toml files in the as-of tree (see research/tools/asof.py).
 
 Formulas are written with the small DSL in ``mathast`` and emitted as TOML with
 the Math AST embedded as JSON. The TOML files are the library; this script only
@@ -1112,21 +1112,114 @@ def oracle_checks() -> dict[str, list[dict]]:
 PAPERS = [bachelier, black, heston, bates, sabr, zabr, sidani, alos]
 
 
-def main():
-    bib = __import__("tomllib").load(open(os.path.join(ROOT, "bibliography.toml"), "rb"))
-    meta = {p["id"]: p for p in bib["papers"]}
+# ---------------------------------------------------------------------------
+# As-of placement: each formula lives in the leaf of the work that published it
+# ---------------------------------------------------------------------------
+
+RENAME_WORK = {"zabr": "andreasen2011"}
+
+# formulas (and the checks about them) that belong to a later work than the file they
+# were first written in; the later leaf imports the earlier one
+SPLITS = {
+    "heston1993": {
+        "to": "albrecher2007", "short": "Albrecher et al. 2007",
+        "status": "restated-pending-pdf",
+        "formulas": ["ft_j", "Ct_j", "Dt_j", "gt_j", "Pt_j", "call_trap"],
+        "checks": ["trap-form-agrees-Re-1", "trap-form-agrees-Re-2", "trap-form-agrees-Im-1",
+                   "trap-form-agrees-Im-2", "quantlib-AnalyticHestonEngine-trap",
+                   "little-heston-trap-finding"]},
+    "bachelier1900": {
+        "to": "schachermayer2008", "short": "Schachermayer & Teichmann 2008",
+        "status": "modern-restatement-pending-pdf",
+        "formulas": ["sde", "call", "put", "d"],
+        "checks": ["call-vs-payoff-integral", "put-call-parity", "modern-vs-1900-atm",
+                   "monte-carlo", "quantlib-bachelierBlackFormula-call",
+                   "quantlib-bachelierBlackFormula-put"]},
+}
+
+# formulas that can only be separated from a later work once the original PDF is in hand
+USES_LATER_WORK = {f"bates1996.{f}": ["albrecher2007"]
+                   for f in ("call", "P_1", "P_2", "psi", "A", "B", "d", "g")}
+
+
+def _rename_ids(obj, mapping):
+    if isinstance(obj, str):
+        return mapping.get(obj, obj)
+    if isinstance(obj, list):
+        return [_rename_ids(x, mapping) for x in obj]
+    if isinstance(obj, dict):
+        return {k: (v if k.endswith("_ast") or k == "ast" else _rename_ids(v, mapping))
+                for k, v in obj.items()}
+    return obj
+
+
+def build_all() -> dict[str, dict]:
+    papers = {}
     for build in PAPERS:
         p = build()
         pid = p["paper"]["id"]
-        refs = p["paper"].pop("bib", [pid])
-        p["paper"] = {**p["paper"], "title": meta[refs[0]]["title"], "bibliography": refs}
+        p["paper"].pop("bib", None)
         p["symbols"] += p.pop("extra_symbols", [])
         p["formulas"] = p.pop("extra_formulas", []) + p["formulas"]
         p["checks"] = p.get("checks", []) + oracle_checks().get(pid, [])
-        path = os.path.join(ROOT, "papers", f"{pid}.toml")
+        papers[pid] = p
+
+    ids: dict[str, str] = {}
+    for old, new in RENAME_WORK.items():
+        for f in papers[old]["formulas"]:
+            ids[f["id"]] = new + f["id"][len(old):]
+    for src, sp in SPLITS.items():
+        for f in sp["formulas"]:
+            ids[f"{src}.{f}"] = f"{sp['to']}.{f}"
+
+    for old, new in RENAME_WORK.items():
+        papers[new] = papers.pop(old)
+        papers[new]["paper"]["id"] = new
+    for src, sp in SPLITS.items():
+        p = papers[src]
+        moved = [f for f in p["formulas"] if f["id"] in {f"{src}.{x}" for x in sp["formulas"]}]
+        checks = [c for c in p["checks"] if c["id"] in sp["checks"]]
+        p["formulas"] = [f for f in p["formulas"] if f not in moved]
+        p["checks"] = [c for c in p["checks"] if c not in checks]
+        from mathast import free_symbols
+        still = set()
+        for f in p["formulas"]:
+            still |= free_symbols(f["ast"])
+        used = set()
+        for f in moved:
+            used |= free_symbols(f["ast"])
+        move_syms = [x for x in p["symbols"] if x["name"] in used and x["name"] not in still]
+        p["symbols"] = [x for x in p["symbols"] if x not in move_syms]
+        papers[sp["to"]] = {
+            "paper": {"id": sp["to"], "short": sp["short"], "transcription_status": sp["status"],
+                      "imports": [src]},
+            "symbols": move_syms, "formulas": moved, "checks": checks}
+
+    for p in papers.values():
+        for f in p["formulas"]:
+            f["id"] = ids.get(f["id"], f["id"])
+            if f["id"] in USES_LATER_WORK:
+                f["uses_later_work"] = USES_LATER_WORK[f["id"]]
+        p["checks"] = [_rename_ids(c, ids) for c in p["checks"]]
+    return papers
+
+
+def main():
+    import asof
+    index = asof.leaves()
+    for pid, p in build_all().items():
+        leaf = index[pid]
+        work = leaf["asof"]["work"]
+        head = {"id": pid, "short": p["paper"]["short"],
+                "transcription_status": p["paper"]["transcription_status"],
+                "title": work["title"], "as_of": leaf["asof"]["as_of"]["date"]}
+        if p["paper"].get("imports"):
+            head["imports"] = p["paper"]["imports"]
+        p["paper"] = head
+        path = os.path.join(leaf["dir"], "formulas.toml")
         with open(path, "w") as fh:
             fh.write(emit(p))
-        print("wrote", os.path.relpath(path, ROOT))
+        print("wrote", os.path.relpath(path, asof.REPO))
 
 
 if __name__ == "__main__":

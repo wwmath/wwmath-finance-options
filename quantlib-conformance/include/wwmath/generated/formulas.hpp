@@ -37,18 +37,18 @@ inline double black1976_intrinsic(double F, double cstar, double t, double r) {
     return std::real((std::exp(((-r) * t)) * ww::max((F - cstar), 0.0)));
 }
 
-/// bachelier1900.call: Normal-model call price (modern restatement)
+/// schachermayer2008.call: Normal-model call price (modern restatement)
 /// Schachermayer & Teichmann (2008), Math. Finance 18(1) (modern-restatement, verified against PDF: no)
 /// LaTeX: C = \left(F - K\right) N\left(d\right) + \sigma \sqrt{T} n\left(d\right)
-inline double bachelier1900_call(double F, double K, double sigma, double T) {
+inline double schachermayer2008_call(double F, double K, double sigma, double T) {
     const auto tmp_1 = ((F - K) / (sigma * std::sqrt(T)));  // d
     return std::real((((F - K) * ww::N(tmp_1)) + (sigma * std::sqrt(T) * ww::n(tmp_1))));
 }
 
-/// bachelier1900.put: Normal-model put price (modern restatement)
+/// schachermayer2008.put: Normal-model put price (modern restatement)
 /// source in the paper TOML (modern-restatement, verified against PDF: no)
 /// LaTeX: P = \left(K - F\right) N\left(-d\right) + \sigma \sqrt{T} n\left(d\right)
-inline double bachelier1900_put(double F, double K, double sigma, double T) {
+inline double schachermayer2008_put(double F, double K, double sigma, double T) {
     const auto tmp_1 = ((F - K) / (sigma * std::sqrt(T)));  // d
     return std::real((((K - F) * ww::N((-tmp_1))) + (sigma * std::sqrt(T) * ww::n(tmp_1))));
 }
@@ -104,10 +104,10 @@ inline double heston1993_call(double S, double v, double kappa, double theta, do
     return std::real(((S * tmp_11) - (K * tmp_12 * tmp_23)));
 }
 
-/// heston1993.call_trap: European call price, branch-safe
+/// albrecher2007.call_trap: European call price, branch-safe
 /// Albrecher, Mayer, Schoutens & Tistaert (2007), 'The Little Heston Trap', Wilmott Magazine, Jan 2007 (restated, verified against PDF: no)
 /// LaTeX: C_{trap} = S Pt_{1} - K P_{tT} Pt_{2}
-inline double heston1993_call_trap(double S, double v, double kappa, double theta, double sigma, double rho, double lambda, double K, double r, double tau) {
+inline double albrecher2007_call_trap(double S, double v, double kappa, double theta, double sigma, double rho, double lambda, double K, double r, double tau) {
     const auto tmp_10 = ww::integrate([&](double phi_) -> double {
         const auto tmp_1 = (kappa * theta);  // a
         const auto tmp_2 = ((kappa + lambda) - (rho * sigma));  // b[1]
@@ -166,10 +166,10 @@ inline double bates1996_call(double S, double V, double T, double X, double b, d
     return std::real((std::exp(((-r) * T)) * ((tmp_1 * tmp_10) - (X * tmp_17))));
 }
 
-/// zabr.sabr_v: SABR case: implied normal volatility (7)
+/// andreasen2011.sabr_v: SABR case: implied normal volatility (7)
 /// eq. (7), p. 6 (verbatim-notation, verified against PDF: yes)
 /// LaTeX: v_{SABR} = \frac{s - k}{x_{SABR}}
-inline double zabr_sabr_v(double s, double z, double k, double rho, double epsilon, double c, double beta) {
+inline double andreasen2011_sabr_v(double s, double z, double k, double rho, double epsilon, double c, double beta) {
     const auto tmp_2 = ww::integrate([&](double u_) -> double {
         const auto tmp_1 = (c * std::pow(u_, beta));  // sigma(u_)
         return std::real((1.0 / tmp_1));
@@ -180,10 +180,10 @@ inline double zabr_sabr_v(double s, double z, double k, double rho, double epsil
     return std::real(((s - k) / tmp_5));
 }
 
-/// zabr.sabr_vbar: SABR case: implied Black volatility (7)
+/// andreasen2011.sabr_vbar: SABR case: implied Black volatility (7)
 /// eq. (7), p. 6 (verbatim-notation, verified against PDF: yes)
 /// LaTeX: \bar{v}_{SABR} = \frac{\ln\left(\frac{s}{k}\right)}{x_{SABR}}
-inline double zabr_sabr_vbar(double s, double z, double k, double rho, double epsilon, double c, double beta) {
+inline double andreasen2011_sabr_vbar(double s, double z, double k, double rho, double epsilon, double c, double beta) {
     const auto tmp_2 = ww::integrate([&](double u_) -> double {
         const auto tmp_1 = (c * std::pow(u_, beta));  // sigma(u_)
         return std::real((1.0 / tmp_1));
@@ -194,10 +194,10 @@ inline double zabr_sabr_vbar(double s, double z, double k, double rho, double ep
     return std::real((std::log((s / k)) / tmp_5));
 }
 
-/// zabr.zabr_y: ZABR case: intermediate variable
+/// andreasen2011.zabr_y: ZABR case: intermediate variable
 /// p. 8 (verbatim-notation, verified against PDF: yes)
 /// LaTeX: y_{ZABR} = {z}^{\gamma - 2} \int_{k}^{s} \frac{1}{\sigma\left(u\right)} \, du
-inline double zabr_zabr_y(double s, double z, double k, double gamma, double c, double beta) {
+inline double andreasen2011_zabr_y(double s, double z, double k, double gamma, double c, double beta) {
     const auto tmp_2 = ww::integrate([&](double u_) -> double {
         const auto tmp_1 = (c * std::pow(u_, beta));  // sigma(u_)
         return std::real((1.0 / tmp_1));
@@ -205,10 +205,10 @@ inline double zabr_zabr_y(double s, double z, double k, double gamma, double c, 
     return std::real((std::pow(z, (gamma - 2.0)) * tmp_2));
 }
 
-/// zabr.F: f'(y) = F(y, f)
+/// andreasen2011.F: f'(y) = F(y, f)
 /// p. 9 (verbatim-notation, verified against PDF: yes)
 /// LaTeX: F\left(y, f\right) = \frac{-B\left(y\right) f + \sqrt{{B\left(y\right)}^{2} {f}^{2} - 4 A\left(y\right) \left(C {f}^{2} - 1\right)}}{2 A\left(y\right)}
-inline double zabr_F(double rho, double epsilon, double gamma, double f, double y) {
+inline double andreasen2011_F(double rho, double epsilon, double gamma, double f, double y) {
     const auto tmp_1 = ((2.0 * rho * (1.0 - gamma) * epsilon) + (2.0 * (1.0 - gamma) * (gamma - 2.0) * std::pow(epsilon, 2.0) * y));  // B(y)
     const auto tmp_2 = (1.0 + (std::pow((gamma - 2.0), 2.0) * std::pow(epsilon, 2.0) * std::pow(y, 2.0)) + (2.0 * rho * (gamma - 2.0) * epsilon * y));  // A(y)
     const auto tmp_3 = (std::pow((1.0 - gamma), 2.0) * std::pow(epsilon, 2.0));  // C

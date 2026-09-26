@@ -1,0 +1,25 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "bates1996"
+name = "Bates"
+title = "Jumps and Stochastic Volatility: Exchange Rate Processes Implicit in Deutsche Mark Options"
+authors = ["David S. Bates"]
+
+[as_of]
+date = "1996-01-01"
+precision = "month"
+event = "Published in The Review of Financial Studies 9(1), January 1996"
+
+[publication]
+year = 1996
+venue = "The Review of Financial Studies"
+volume = "9(1)"
+pages = "69-107"
+doi = "10.1093/rfs/9.1.69"
+landing = "https://doi.org/10.1093/rfs/9.1.69"
+access = "subscription"
+role = "Heston + lognormal Poisson jumps (lognormal, stochastic vol, jumps)."
+
+[files]
+formulas = "formulas.toml"

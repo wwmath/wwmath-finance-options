@@ -25,7 +25,7 @@ TEST(SabrNormal, AndreasenHuge7MatchesZabrAtGammaOne) {
         if (c.beta >= 1.0) continue;                         // ZabrModel y() needs beta < 1 here
         ql::ZabrModel m(c.T, c.f, c.alpha, c.beta, c.nu, c.rho, 1.0);
         // paper: z = alpha (today's vol), sigma(s) = c s^beta with c = 1, epsilon = nu
-        tr.check(wwmath::gen::zabr_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
+        tr.check(wwmath::gen::andreasen2011_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
                  m.normalVolatility(c.K), "");
     }
 }
@@ -35,7 +35,7 @@ TEST(SabrNormal, AgreesWithUnsafeSabrNormalVolatilityNearTheMoney) {
     Tracker tr("SABR normal: A-H (7) vs sabrNormal, ATM+-5%", 2e-5);
     for (auto c : grids::sabr()) {
         if (c.beta >= 1.0 || std::abs(c.K / c.f - 1.0) > 0.051) continue;
-        tr.check(wwmath::gen::zabr_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
+        tr.check(wwmath::gen::andreasen2011_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
                  ql::unsafeSabrNormalVolatility(c.K, c.f, 0.0, c.alpha, c.beta, c.nu, c.rho), "");
     }
 }
@@ -49,7 +49,7 @@ TEST(SabrNormal, ExpansionGapInTheWingsIsBounded) {
     Tracker tr("SABR normal: expansion gap, wings", 1.5e-2);
     for (auto c : grids::sabr()) {
         if (c.beta >= 1.0 || std::abs(c.K / c.f - 1.0) <= 0.051) continue;
-        tr.check(wwmath::gen::zabr_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
+        tr.check(wwmath::gen::andreasen2011_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
                  ql::unsafeSabrNormalVolatility(c.K, c.f, 0.0, c.alpha, c.beta, c.nu, c.rho), "");
     }
 }

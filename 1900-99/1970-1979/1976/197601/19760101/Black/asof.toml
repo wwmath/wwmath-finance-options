@@ -1,0 +1,25 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "black1976"
+name = "Black"
+title = "The pricing of commodity contracts"
+authors = ["Fischer Black"]
+
+[as_of]
+date = "1976-01-01"
+precision = "issue"
+event = "Published in the Journal of Financial Economics 3(1-2), January-March 1976 issue"
+
+[publication]
+year = 1976
+venue = "Journal of Financial Economics"
+volume = "3(1-2)"
+pages = "167-179"
+doi = "10.1016/0304-405X(76)90024-6"
+landing = "https://doi.org/10.1016/0304-405X(76)90024-6"
+access = "subscription"
+role = "Black-76: lognormal forward/futures option formula."
+
+[files]
+formulas = "formulas.toml"

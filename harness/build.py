@@ -1,6 +1,6 @@
 """Build the Cross-Language Heston WASM Conformance Harness.
 
-    Domain AST (research/papers/*.toml SDEs)
+    Domain AST (the as-of tree (*/formulas.toml) SDEs)
        -> Typed Math IR (research/tools/ir.py; Euler, full truncation)
        -> C, C++, Fortran, Zig, Rust, Carbon sources + direct WASM (research/tools/emitters.py)
        -> engines/<lang>.wasm (one independently compiled module per language, exporting
@@ -133,8 +133,8 @@ def references(lib: Library, name: str, d: dict) -> dict:
                               for K in strikes]}
         out["quantlib"] = None
     elif name == "heston_step":
-        out["formula"] = {"id": "heston1993.call_trap", "label": "Heston (10), little-trap CF",
-                          "prices": [formula(lib, "heston1993.call_trap", {
+        out["formula"] = {"id": "albrecher2007.call_trap", "label": "Heston (10), little-trap CF",
+                          "prices": [formula(lib, "albrecher2007.call_trap", {
                               "S": d["s"], "v": d["v"], "kappa": d["kappa"], "theta": d["theta"],
                               "sigma": d["sigma"], "rho": d["rho"], "lambda": 0.0, "r": d["r"],
                               "K": K, "tau": d["T"]}) for K in strikes]}

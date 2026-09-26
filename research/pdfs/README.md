@@ -1,5 +1,5 @@
-# pdfs/
+# research/pdfs/
 
-Put the downloaded papers here, named `<id>.pdf` with the ids from
-`../bibliography.toml` (e.g. `heston1993.pdf`). Everything in this folder except
-this README is git-ignored.
+Source PDFs now live in their as-of leaf (for example
+`1900-99/1900-1909/1900/190003/19000329/Bachelier/`). This folder only holds files
+that are not yet filed; see `../unfiled.toml`.

@@ -13,7 +13,7 @@ double solve_f(double y_end, double rho, double eps, double gamma) {
     const int n = 20000;
     const double h = y_end / n;
     double y = 0.0, f = 0.0;
-    auto F = [&](double yy, double ff) { return wwmath::gen::zabr_F(rho, eps, gamma, ff, yy); };
+    auto F = [&](double yy, double ff) { return wwmath::gen::andreasen2011_F(rho, eps, gamma, ff, yy); };
     for (int i = 0; i < n; ++i) {
         const double k1 = F(y, f), k2 = F(y + h / 2, f + h * k1 / 2),
                      k3 = F(y + h / 2, f + h * k2 / 2), k4 = F(y + h, f + h * k3);
@@ -30,7 +30,7 @@ TEST(Zabr, OdeSolutionMatchesZabrModelNormalVolatility) {
     Tracker tr("ZABR ODE (8) vs ZabrModel normalVol", 1e-6);
     for (auto c : grids::zabr()) {
         const double eps = c.nu * std::pow(c.alpha, 1.0 - c.gamma);
-        const double y = wwmath::gen::zabr_zabr_y(c.f, c.alpha, c.K, c.gamma, 1.0, c.beta);
+        const double y = wwmath::gen::andreasen2011_zabr_y(c.f, c.alpha, c.K, c.gamma, 1.0, c.beta);
         const double x = std::pow(c.alpha, 1.0 - c.gamma) * solve_f(y, c.rho, eps, c.gamma);
         const double ours = (c.f - c.K) / x;
         ql::ZabrModel m(c.T, c.f, c.alpha, c.beta, c.nu, c.rho, c.gamma);
@@ -43,9 +43,9 @@ TEST(Zabr, GammaOneClosedFormMatchesOdeSolution) {
     Tracker tr("ZABR (7) closed form vs ODE at g=1", 1e-9);
     for (auto c : grids::zabr()) {
         if (c.gamma != 1.0) continue;
-        const double y = wwmath::gen::zabr_zabr_y(c.f, c.alpha, c.K, 1.0, 1.0, c.beta);
+        const double y = wwmath::gen::andreasen2011_zabr_y(c.f, c.alpha, c.K, 1.0, 1.0, c.beta);
         const double x = solve_f(y, c.rho, c.nu, 1.0);
-        tr.check(wwmath::gen::zabr_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
+        tr.check(wwmath::gen::andreasen2011_sabr_v(c.f, c.alpha, c.K, c.rho, c.nu, 1.0, c.beta),
                  (c.f - c.K) / x, "");
     }
 }

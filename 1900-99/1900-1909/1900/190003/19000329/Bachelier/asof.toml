@@ -1,0 +1,34 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "bachelier1900"
+name = "Bachelier"
+title = "Théorie de la spéculation"
+authors = ["Louis Bachelier"]
+
+[as_of]
+date = "1900-03-29"
+precision = "day"
+event = "Doctoral thesis 'Théorie de la spéculation' defended at the Sorbonne (jury: Appell, Boussinesq, Poincaré)"
+
+[[later_events]]
+date = "1900"
+precision = "year"
+event = "Published in Annales scientifiques de l'École Normale Supérieure, 3e série, 17, 21-86"
+
+[publication]
+year = 1900
+venue = "Annales scientifiques de l'École Normale Supérieure, Série 3"
+volume = "17"
+pages = "21-86"
+doi = "10.24033/asens.476"
+landing = "https://www.numdam.org/item/ASENS_1900_3_17__21_0/"
+pdf = "https://www.numdam.org/article/ASENS_1900_3_17__21_0.pdf"
+mirrors = ["http://eudml.org/doc/81146"]
+access = "open"
+notes = "Public domain. English translation: Cootner (ed.), The Random Character of Stock Market Prices, MIT Press 1964, pp. 17-78; also Davis & Etheridge, Louis Bachelier's Theory of Speculation, Princeton UP 2006."
+role = "Arithmetic (normal) Brownian dynamics; the Bachelier option price."
+
+[files]
+formulas = "formulas.toml"
+pdf = "Bachalier_ASENS_1900_3_17__21_0.pdf"

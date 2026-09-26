@@ -4,7 +4,7 @@
 TEST(Heston, BranchSafeCallMatchesAnalyticHestonEngine) {
     Tracker tr("Heston call_trap vs AnalyticHestonEngine", 1e-9, 1e-10);
     for (auto c : grids::heston())
-        tr.check(wwmath::gen::heston1993_call_trap(c.S, c.v, c.kappa, c.theta, c.sigma, c.rho,
+        tr.check(wwmath::gen::albrecher2007_call_trap(c.S, c.v, c.kappa, c.theta, c.sigma, c.rho,
                                                    0.0, c.K, c.r, c.T),
                  qlsetup::heston_call(c), "T=" + std::to_string(c.T));
 }

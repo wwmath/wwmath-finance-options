@@ -5,7 +5,7 @@ compares **WWMath C++ generated from the paper ASTs** with the **QuantLib C++
 library**, two implementations that share no code.
 
 ```
-research/papers/*.toml ──(research/tools/cpp.py)──► include/wwmath/generated/formulas.hpp
+the as-of tree (*/formulas.toml) ──(research/tools/cpp.py)──► include/wwmath/generated/formulas.hpp
                                                           │   header-only, std library only
                                                           ▼
                               tests/test_*.cpp  ◄──►  QuantLib (C++, pinned commit 0191ca7)
@@ -18,14 +18,14 @@ research/papers/*.toml ──(research/tools/cpp.py)──► include/wwmath/gen
 | # | Ledger model | WWMath (generated from) | QuantLib | Tolerance |
 |---|---|---|---|---|
 | 1 | Black-76 lognormal | `black1976.call` / `.put` | `blackFormula` | 1e-12 rel |
-| 2 | Bachelier | `bachelier1900.call` / `.put` | `bachelierBlackFormula` | 1e-12 rel |
+| 2 | Bachelier | `schachermayer2008.call` / `.put` | `bachelierBlackFormula` | 1e-12 rel |
 | 3 | Black-76 shifted | `black1976.call` on (F+d, K+d) | `blackFormula(…, displacement)` | 1e-12 rel |
 | 4 | Black-76 intrinsic | `black1976.intrinsic` | `blackFormula` with `stdDev = 0` | 1e-15 |
 | 5 | SABR Hagan lognormal | `hagan2002.sigma_B` (2.17), `sigma_ATM` (2.18) | `sabrVolatility` | 1e-12 rel |
 | 6 | SABR shifted / normal | (2.17) on shifted inputs; A–H (7) normal vol | `shiftedSabrVolatility`; `ZabrModel(γ=1)`; `unsafeSabrNormalVolatility` | 1e-12 / 1e-10 / see below |
-| 7 | Heston | `heston1993.call_trap`, `heston1993.call` | `AnalyticHestonEngine` | 1e-9 rel |
+| 7 | Heston | `albrecher2007.call_trap`, `heston1993.call` | `AnalyticHestonEngine` | 1e-9 rel |
 | 8 | Bates | `bates1996.call` | `BatesEngine` | 1e-9 rel |
-| 9 | ZABR | `zabr.zabr_y` + ODE `zabr.F`, integrated by RK4 | `ZabrModel::normalVolatility` | 1e-6 rel (QuantLib's RK tolerance is 1e-8) |
+| 9 | ZABR | `andreasen2011.zabr_y` + ODE `andreasen2011.F`, integrated by RK4 | `ZabrModel::normalVolatility` | 1e-6 rel (QuantLib's RK tolerance is 1e-8) |
 
 Each test prints the worst relative difference it saw, so a run doubles as a
 conformance report.

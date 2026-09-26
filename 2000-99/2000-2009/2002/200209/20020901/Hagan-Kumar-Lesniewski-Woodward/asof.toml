@@ -1,0 +1,25 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "hagan2002"
+name = "Hagan-Kumar-Lesniewski-Woodward"
+title = "Managing Smile Risk"
+authors = ["Patrick S. Hagan", "Deep Kumar", "Andrew S. Lesniewski", "Diana E. Woodward"]
+
+[as_of]
+date = "2002-09-01"
+precision = "month"
+event = "Published in Wilmott Magazine, September 2002"
+
+[publication]
+year = 2002
+venue = "Wilmott Magazine (September)"
+pages = "84-108"
+landing = "https://www.researchgate.net/publication/235622441_Managing_Smile_Risk"
+mirrors = ["http://www.princeton.edu/~sircar/sabrall.pdf"]
+access = "subscription"
+notes = "No DOI. The Princeton mirror is widely cited but may be dead. Companion: Oblój (2008), 'Fine-tune your smile: correction to Hagan et al.', arXiv:0708.0998."
+role = "SABR dynamics and the Hagan implied-volatility expansion."
+
+[files]
+formulas = "formulas.toml"

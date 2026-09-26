@@ -300,7 +300,7 @@
      120.0
     ],
     "formula": {
-     "id": "heston1993.call_trap",
+     "id": "albrecher2007.call_trap",
      "label": "Heston (10), little-trap CF",
      "prices": [
       23.74004427776312,

@@ -35,7 +35,7 @@ underlying = "arithmetic"
 volatility = "constant"
 jumps = "none"
 correlation = "n/a"
-sde = ["bachelier1900.sde"]
+sde = ["schachermayer2008.sde"]
 
 [[models]]
 id = "black76"
@@ -76,12 +76,12 @@ sde = ["hagan2002.forward_sde", "hagan2002.vol_sde"]
 
 [[models]]
 id = "zabr"
-paper = "zabr"
+paper = "andreasen2011"
 underlying = "cev"
 volatility = "cev_vol"
 jumps = "none"
 correlation = "rho"
-sde = ["zabr.cev_spot_sde", "zabr.cev_vol_sde"]
+sde = ["andreasen2011.cev_spot_sde", "andreasen2011.cev_vol_sde"]
 notes = "gamma = 1 reduces to SABR (symbolic check)."
 
 [[models]]
