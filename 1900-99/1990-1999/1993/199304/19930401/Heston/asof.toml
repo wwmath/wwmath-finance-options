@@ -1,0 +1,29 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "heston1993"
+name = "Heston"
+title = "A Closed-Form Solution for Options with Stochastic Volatility with Applications to Bond and Currency Options"
+authors = ["Steven L. Heston"]
+
+[as_of]
+date = "1993-04-01"
+precision = "month"
+event = "Published in The Review of Financial Studies 6(2), April 1993"
+
+[publication]
+year = 1993
+venue = "The Review of Financial Studies"
+volume = "6(2)"
+pages = "327-343"
+doi = "10.1093/rfs/6.2.327"
+landing = "https://doi.org/10.1093/rfs/6.2.327"
+access = "subscription"
+role = "Lognormal spot + square-root stochastic variance, no jumps."
+
+[files]
+formulas = "formulas.toml"
+local_pdf = "Heston-993.pdf"
+
+[timeline]
+lane = "lognormal"

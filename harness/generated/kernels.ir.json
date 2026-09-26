@@ -1,0 +1,2027 @@
+[
+ {
+  "name": "normal_heston_step",
+  "params": [
+   {
+    "name": "x",
+    "type": "f64"
+   },
+   {
+    "name": "v",
+    "type": "f64"
+   },
+   {
+    "name": "dt",
+    "type": "f64"
+   },
+   {
+    "name": "kappa",
+    "type": "f64"
+   },
+   {
+    "name": "theta",
+    "type": "f64"
+   },
+   {
+    "name": "xi",
+    "type": "f64"
+   },
+   {
+    "name": "rho",
+    "type": "f64"
+   },
+   {
+    "name": "z1",
+    "type": "f64"
+   },
+   {
+    "name": "z2",
+    "type": "f64"
+   },
+   {
+    "name": "output",
+    "type": "ptr_f64"
+   }
+  ],
+  "lets": [
+   {
+    "name": "v_pos",
+    "type": "f64",
+    "expr": {
+     "op": "max",
+     "args": [
+      {
+       "op": "var",
+       "name": "v"
+      },
+      {
+       "op": "const",
+       "value": 0.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "sqrt_dt",
+    "type": "f64",
+    "expr": {
+     "op": "sqrt",
+     "args": [
+      {
+       "op": "var",
+       "name": "dt"
+      }
+     ]
+    }
+   },
+   {
+    "name": "dw_v",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "sqrt_dt"
+      },
+      {
+       "op": "var",
+       "name": "z1"
+      }
+     ]
+    }
+   },
+   {
+    "name": "dw_x",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "sqrt_dt"
+      },
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "rho"
+          },
+          {
+           "op": "var",
+           "name": "z1"
+          }
+         ]
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "sqrt",
+           "args": [
+            {
+             "op": "sub",
+             "args": [
+              {
+               "op": "const",
+               "value": 1.0
+              },
+              {
+               "op": "mul",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "rho"
+                },
+                {
+                 "op": "var",
+                 "name": "rho"
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "z2"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "stores": [
+   {
+    "index": 0,
+    "name": "x_next",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "var",
+       "name": "x"
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "sqrt",
+         "args": [
+          {
+           "op": "var",
+           "name": "v_pos"
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "dw_x"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "index": 1,
+    "name": "v_next",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "var",
+         "name": "v"
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "mul",
+           "args": [
+            {
+             "op": "var",
+             "name": "kappa"
+            },
+            {
+             "op": "sub",
+             "args": [
+              {
+               "op": "var",
+               "name": "theta"
+              },
+              {
+               "op": "var",
+               "name": "v_pos"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "dt"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "xi"
+          },
+          {
+           "op": "sqrt",
+           "args": [
+            {
+             "op": "var",
+             "name": "v_pos"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "dw_v"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "source": {
+   "paper": "sidani2014",
+   "sde": [
+    "sidani2014.forward_sde",
+    "sidani2014.variance_sde"
+   ],
+   "correlation": "sidani2014.correlation",
+   "scheme": "euler-full-truncation"
+  }
+ },
+ {
+  "name": "heston_step",
+  "params": [
+   {
+    "name": "s",
+    "type": "f64"
+   },
+   {
+    "name": "v",
+    "type": "f64"
+   },
+   {
+    "name": "dt",
+    "type": "f64"
+   },
+   {
+    "name": "r",
+    "type": "f64"
+   },
+   {
+    "name": "kappa",
+    "type": "f64"
+   },
+   {
+    "name": "theta",
+    "type": "f64"
+   },
+   {
+    "name": "sigma",
+    "type": "f64"
+   },
+   {
+    "name": "rho",
+    "type": "f64"
+   },
+   {
+    "name": "z1",
+    "type": "f64"
+   },
+   {
+    "name": "z2",
+    "type": "f64"
+   },
+   {
+    "name": "output",
+    "type": "ptr_f64"
+   }
+  ],
+  "lets": [
+   {
+    "name": "s_pos",
+    "type": "f64",
+    "expr": {
+     "op": "max",
+     "args": [
+      {
+       "op": "var",
+       "name": "s"
+      },
+      {
+       "op": "const",
+       "value": 0.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "v_pos",
+    "type": "f64",
+    "expr": {
+     "op": "max",
+     "args": [
+      {
+       "op": "var",
+       "name": "v"
+      },
+      {
+       "op": "const",
+       "value": 0.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "sqrt_dt",
+    "type": "f64",
+    "expr": {
+     "op": "sqrt",
+     "args": [
+      {
+       "op": "var",
+       "name": "dt"
+      }
+     ]
+    }
+   },
+   {
+    "name": "dw_v",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "sqrt_dt"
+      },
+      {
+       "op": "var",
+       "name": "z1"
+      }
+     ]
+    }
+   },
+   {
+    "name": "dw_s",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "sqrt_dt"
+      },
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "rho"
+          },
+          {
+           "op": "var",
+           "name": "z1"
+          }
+         ]
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "sqrt",
+           "args": [
+            {
+             "op": "sub",
+             "args": [
+              {
+               "op": "const",
+               "value": 1.0
+              },
+              {
+               "op": "mul",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "rho"
+                },
+                {
+                 "op": "var",
+                 "name": "rho"
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "z2"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "stores": [
+   {
+    "index": 0,
+    "name": "s_next",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "var",
+         "name": "s"
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "mul",
+           "args": [
+            {
+             "op": "var",
+             "name": "r"
+            },
+            {
+             "op": "var",
+             "name": "s_pos"
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "dt"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "sqrt",
+           "args": [
+            {
+             "op": "var",
+             "name": "v_pos"
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "s_pos"
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "dw_s"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "index": 1,
+    "name": "v_next",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "var",
+         "name": "v"
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "mul",
+           "args": [
+            {
+             "op": "var",
+             "name": "kappa"
+            },
+            {
+             "op": "sub",
+             "args": [
+              {
+               "op": "var",
+               "name": "theta"
+              },
+              {
+               "op": "var",
+               "name": "v_pos"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "dt"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "sigma"
+          },
+          {
+           "op": "sqrt",
+           "args": [
+            {
+             "op": "var",
+             "name": "v_pos"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "dw_v"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "source": {
+   "paper": "heston1993",
+   "sde": [
+    "heston1993.spot_sde",
+    "heston1993.variance_sde"
+   ],
+   "correlation": "heston1993.correlation",
+   "scheme": "euler-full-truncation"
+  }
+ },
+ {
+  "name": "bates_step",
+  "params": [
+   {
+    "name": "s",
+    "type": "f64"
+   },
+   {
+    "name": "v",
+    "type": "f64"
+   },
+   {
+    "name": "dt",
+    "type": "f64"
+   },
+   {
+    "name": "b",
+    "type": "f64"
+   },
+   {
+    "name": "lambdastar",
+    "type": "f64"
+   },
+   {
+    "name": "kbarstar",
+    "type": "f64"
+   },
+   {
+    "name": "alpha",
+    "type": "f64"
+   },
+   {
+    "name": "betastar",
+    "type": "f64"
+   },
+   {
+    "name": "sigma_v",
+    "type": "f64"
+   },
+   {
+    "name": "rho",
+    "type": "f64"
+   },
+   {
+    "name": "z1",
+    "type": "f64"
+   },
+   {
+    "name": "z2",
+    "type": "f64"
+   },
+   {
+    "name": "dj",
+    "type": "f64"
+   },
+   {
+    "name": "output",
+    "type": "ptr_f64"
+   }
+  ],
+  "lets": [
+   {
+    "name": "s_pos",
+    "type": "f64",
+    "expr": {
+     "op": "max",
+     "args": [
+      {
+       "op": "var",
+       "name": "s"
+      },
+      {
+       "op": "const",
+       "value": 0.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "v_pos",
+    "type": "f64",
+    "expr": {
+     "op": "max",
+     "args": [
+      {
+       "op": "var",
+       "name": "v"
+      },
+      {
+       "op": "const",
+       "value": 0.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "sqrt_dt",
+    "type": "f64",
+    "expr": {
+     "op": "sqrt",
+     "args": [
+      {
+       "op": "var",
+       "name": "dt"
+      }
+     ]
+    }
+   },
+   {
+    "name": "dw_v",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "sqrt_dt"
+      },
+      {
+       "op": "var",
+       "name": "z1"
+      }
+     ]
+    }
+   },
+   {
+    "name": "dw_s",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "sqrt_dt"
+      },
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "rho"
+          },
+          {
+           "op": "var",
+           "name": "z1"
+          }
+         ]
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "sqrt",
+           "args": [
+            {
+             "op": "sub",
+             "args": [
+              {
+               "op": "const",
+               "value": 1.0
+              },
+              {
+               "op": "mul",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "rho"
+                },
+                {
+                 "op": "var",
+                 "name": "rho"
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "z2"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "stores": [
+   {
+    "index": 0,
+    "name": "s_next",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "add",
+         "args": [
+          {
+           "op": "var",
+           "name": "s"
+          },
+          {
+           "op": "mul",
+           "args": [
+            {
+             "op": "mul",
+             "args": [
+              {
+               "op": "sub",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "b"
+                },
+                {
+                 "op": "mul",
+                 "args": [
+                  {
+                   "op": "var",
+                   "name": "lambdastar"
+                  },
+                  {
+                   "op": "var",
+                   "name": "kbarstar"
+                  }
+                 ]
+                }
+               ]
+              },
+              {
+               "op": "var",
+               "name": "s_pos"
+              }
+             ]
+            },
+            {
+             "op": "var",
+             "name": "dt"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "mul",
+           "args": [
+            {
+             "op": "sqrt",
+             "args": [
+              {
+               "op": "var",
+               "name": "v_pos"
+              }
+             ]
+            },
+            {
+             "op": "var",
+             "name": "s_pos"
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "dw_s"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "var",
+         "name": "dj"
+        },
+        {
+         "op": "var",
+         "name": "s_pos"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "index": 1,
+    "name": "v_next",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "var",
+         "name": "v"
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "sub",
+           "args": [
+            {
+             "op": "var",
+             "name": "alpha"
+            },
+            {
+             "op": "mul",
+             "args": [
+              {
+               "op": "var",
+               "name": "betastar"
+              },
+              {
+               "op": "var",
+               "name": "v_pos"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "dt"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "sigma_v"
+          },
+          {
+           "op": "sqrt",
+           "args": [
+            {
+             "op": "var",
+             "name": "v_pos"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "dw_v"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "source": {
+   "paper": "bates1996",
+   "sde": [
+    "bates1996.spot_sde",
+    "bates1996.variance_sde"
+   ],
+   "correlation": "bates1996.correlation",
+   "scheme": "euler-full-truncation"
+  }
+ },
+ {
+  "name": "sabr_step",
+  "params": [
+   {
+    "name": "f",
+    "type": "f64"
+   },
+   {
+    "name": "alpha",
+    "type": "f64"
+   },
+   {
+    "name": "dt",
+    "type": "f64"
+   },
+   {
+    "name": "beta",
+    "type": "f64"
+   },
+   {
+    "name": "nu",
+    "type": "f64"
+   },
+   {
+    "name": "rho",
+    "type": "f64"
+   },
+   {
+    "name": "z1",
+    "type": "f64"
+   },
+   {
+    "name": "z2",
+    "type": "f64"
+   },
+   {
+    "name": "output",
+    "type": "ptr_f64"
+   }
+  ],
+  "lets": [
+   {
+    "name": "f_pos",
+    "type": "f64",
+    "expr": {
+     "op": "max",
+     "args": [
+      {
+       "op": "var",
+       "name": "f"
+      },
+      {
+       "op": "const",
+       "value": 0.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "alpha_pos",
+    "type": "f64",
+    "expr": {
+     "op": "max",
+     "args": [
+      {
+       "op": "var",
+       "name": "alpha"
+      },
+      {
+       "op": "const",
+       "value": 0.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "sqrt_dt",
+    "type": "f64",
+    "expr": {
+     "op": "sqrt",
+     "args": [
+      {
+       "op": "var",
+       "name": "dt"
+      }
+     ]
+    }
+   },
+   {
+    "name": "dw_alpha",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "sqrt_dt"
+      },
+      {
+       "op": "var",
+       "name": "z1"
+      }
+     ]
+    }
+   },
+   {
+    "name": "dw_f",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "sqrt_dt"
+      },
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "rho"
+          },
+          {
+           "op": "var",
+           "name": "z1"
+          }
+         ]
+        },
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "sqrt",
+           "args": [
+            {
+             "op": "sub",
+             "args": [
+              {
+               "op": "const",
+               "value": 1.0
+              },
+              {
+               "op": "mul",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "rho"
+                },
+                {
+                 "op": "var",
+                 "name": "rho"
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "z2"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_ix",
+    "type": "u64",
+    "expr": {
+     "op": "bits",
+     "args": [
+      {
+       "op": "max",
+       "args": [
+        {
+         "op": "var",
+         "name": "f_pos"
+        },
+        {
+         "op": "const",
+         "value": 1e-300
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_hx",
+    "type": "u64",
+    "expr": {
+     "op": "uadd",
+     "args": [
+      {
+       "op": "ushr",
+       "args": [
+        {
+         "op": "var",
+         "name": "pow_log_ix"
+        }
+       ],
+       "amount": 32
+      },
+      {
+       "op": "u64",
+       "value": 614242
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_k",
+    "type": "f64",
+    "expr": {
+     "op": "sub",
+     "args": [
+      {
+       "op": "u2f",
+       "args": [
+        {
+         "op": "ushr",
+         "args": [
+          {
+           "op": "var",
+           "name": "pow_log_hx"
+          }
+         ],
+         "amount": 20
+        }
+       ]
+      },
+      {
+       "op": "const",
+       "value": 1023.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_m",
+    "type": "f64",
+    "expr": {
+     "op": "from_bits",
+     "args": [
+      {
+       "op": "uor",
+       "args": [
+        {
+         "op": "ushl",
+         "args": [
+          {
+           "op": "uadd",
+           "args": [
+            {
+             "op": "uand",
+             "args": [
+              {
+               "op": "var",
+               "name": "pow_log_hx"
+              },
+              {
+               "op": "u64",
+               "value": 1048575
+              }
+             ]
+            },
+            {
+             "op": "u64",
+             "value": 1072079006
+            }
+           ]
+          }
+         ],
+         "amount": 32
+        },
+        {
+         "op": "uand",
+         "args": [
+          {
+           "op": "var",
+           "name": "pow_log_ix"
+          },
+          {
+           "op": "u64",
+           "value": 4294967295
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_f",
+    "type": "f64",
+    "expr": {
+     "op": "sub",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_log_m"
+      },
+      {
+       "op": "const",
+       "value": 1.0
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_hfsq",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "const",
+         "value": 0.5
+        },
+        {
+         "op": "var",
+         "name": "pow_log_f"
+        }
+       ]
+      },
+      {
+       "op": "var",
+       "name": "pow_log_f"
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_s",
+    "type": "f64",
+    "expr": {
+     "op": "div",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_log_f"
+      },
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "const",
+         "value": 2.0
+        },
+        {
+         "op": "var",
+         "name": "pow_log_f"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_z",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_log_s"
+      },
+      {
+       "op": "var",
+       "name": "pow_log_s"
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_w",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_log_z"
+      },
+      {
+       "op": "var",
+       "name": "pow_log_z"
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_R",
+    "type": "f64",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "var",
+         "name": "pow_log_z"
+        },
+        {
+         "op": "add",
+         "args": [
+          {
+           "op": "const",
+           "value": 0.6666666666666735
+          },
+          {
+           "op": "mul",
+           "args": [
+            {
+             "op": "var",
+             "name": "pow_log_w"
+            },
+            {
+             "op": "add",
+             "args": [
+              {
+               "op": "const",
+               "value": 0.2857142874366239
+              },
+              {
+               "op": "mul",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "pow_log_w"
+                },
+                {
+                 "op": "add",
+                 "args": [
+                  {
+                   "op": "const",
+                   "value": 0.1818357216161805
+                  },
+                  {
+                   "op": "mul",
+                   "args": [
+                    {
+                     "op": "var",
+                     "name": "pow_log_w"
+                    },
+                    {
+                     "op": "const",
+                     "value": 0.14798198605116586
+                    }
+                   ]
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "var",
+         "name": "pow_log_w"
+        },
+        {
+         "op": "add",
+         "args": [
+          {
+           "op": "const",
+           "value": 0.3999999999940942
+          },
+          {
+           "op": "mul",
+           "args": [
+            {
+             "op": "var",
+             "name": "pow_log_w"
+            },
+            {
+             "op": "add",
+             "args": [
+              {
+               "op": "const",
+               "value": 0.22222198432149784
+              },
+              {
+               "op": "mul",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "pow_log_w"
+                },
+                {
+                 "op": "const",
+                 "value": 0.15313837699209373
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_log_res",
+    "type": "f64",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "sub",
+         "args": [
+          {
+           "op": "add",
+           "args": [
+            {
+             "op": "mul",
+             "args": [
+              {
+               "op": "var",
+               "name": "pow_log_s"
+              },
+              {
+               "op": "add",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "pow_log_hfsq"
+                },
+                {
+                 "op": "var",
+                 "name": "pow_log_R"
+                }
+               ]
+              }
+             ]
+            },
+            {
+             "op": "mul",
+             "args": [
+              {
+               "op": "var",
+               "name": "pow_log_k"
+              },
+              {
+               "op": "const",
+               "value": 1.9082149292705877e-10
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "pow_log_hfsq"
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "pow_log_f"
+        }
+       ]
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "var",
+         "name": "pow_log_k"
+        },
+        {
+         "op": "const",
+         "value": 0.6931471803691238
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_x",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "beta"
+      },
+      {
+       "op": "var",
+       "name": "pow_log_res"
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_k",
+    "type": "f64",
+    "expr": {
+     "op": "floor",
+     "args": [
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "pow_x"
+          },
+          {
+           "op": "const",
+           "value": 1.4426950408889634
+          }
+         ]
+        },
+        {
+         "op": "const",
+         "value": 0.5
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_hi",
+    "type": "f64",
+    "expr": {
+     "op": "sub",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_x"
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "var",
+         "name": "pow_k"
+        },
+        {
+         "op": "const",
+         "value": 0.6931471803691238
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_lo",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_k"
+      },
+      {
+       "op": "const",
+       "value": 1.9082149292705877e-10
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_r",
+    "type": "f64",
+    "expr": {
+     "op": "sub",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_hi"
+      },
+      {
+       "op": "var",
+       "name": "pow_lo"
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_t",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_r"
+      },
+      {
+       "op": "var",
+       "name": "pow_r"
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_c",
+    "type": "f64",
+    "expr": {
+     "op": "sub",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_r"
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "var",
+         "name": "pow_t"
+        },
+        {
+         "op": "add",
+         "args": [
+          {
+           "op": "const",
+           "value": 0.16666666666666602
+          },
+          {
+           "op": "mul",
+           "args": [
+            {
+             "op": "var",
+             "name": "pow_t"
+            },
+            {
+             "op": "add",
+             "args": [
+              {
+               "op": "const",
+               "value": -0.0027777777777015593
+              },
+              {
+               "op": "mul",
+               "args": [
+                {
+                 "op": "var",
+                 "name": "pow_t"
+                },
+                {
+                 "op": "add",
+                 "args": [
+                  {
+                   "op": "const",
+                   "value": 6.613756321437934e-05
+                  },
+                  {
+                   "op": "mul",
+                   "args": [
+                    {
+                     "op": "var",
+                     "name": "pow_t"
+                    },
+                    {
+                     "op": "add",
+                     "args": [
+                      {
+                       "op": "const",
+                       "value": -1.6533902205465252e-06
+                      },
+                      {
+                       "op": "mul",
+                       "args": [
+                        {
+                         "op": "var",
+                         "name": "pow_t"
+                        },
+                        {
+                         "op": "const",
+                         "value": 4.1381367970572385e-08
+                        }
+                       ]
+                      }
+                     ]
+                    }
+                   ]
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_y",
+    "type": "f64",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "const",
+       "value": 1.0
+      },
+      {
+       "op": "add",
+       "args": [
+        {
+         "op": "sub",
+         "args": [
+          {
+           "op": "div",
+           "args": [
+            {
+             "op": "mul",
+             "args": [
+              {
+               "op": "var",
+               "name": "pow_r"
+              },
+              {
+               "op": "var",
+               "name": "pow_c"
+              }
+             ]
+            },
+            {
+             "op": "sub",
+             "args": [
+              {
+               "op": "const",
+               "value": 2.0
+              },
+              {
+               "op": "var",
+               "name": "pow_c"
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "op": "var",
+           "name": "pow_lo"
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "pow_hi"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_2k",
+    "type": "f64",
+    "expr": {
+     "op": "from_bits",
+     "args": [
+      {
+       "op": "ushl",
+       "args": [
+        {
+         "op": "f2u",
+         "args": [
+          {
+           "op": "add",
+           "args": [
+            {
+             "op": "var",
+             "name": "pow_k"
+            },
+            {
+             "op": "const",
+             "value": 1023.0
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "amount": 52
+      }
+     ]
+    }
+   },
+   {
+    "name": "pow_res",
+    "type": "f64",
+    "expr": {
+     "op": "mul",
+     "args": [
+      {
+       "op": "var",
+       "name": "pow_y"
+      },
+      {
+       "op": "var",
+       "name": "pow_2k"
+      }
+     ]
+    }
+   }
+  ],
+  "stores": [
+   {
+    "index": 0,
+    "name": "f_next",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "var",
+       "name": "f"
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "alpha_pos"
+          },
+          {
+           "op": "var",
+           "name": "pow_res"
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "dw_f"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "index": 1,
+    "name": "alpha_next",
+    "expr": {
+     "op": "add",
+     "args": [
+      {
+       "op": "var",
+       "name": "alpha"
+      },
+      {
+       "op": "mul",
+       "args": [
+        {
+         "op": "mul",
+         "args": [
+          {
+           "op": "var",
+           "name": "nu"
+          },
+          {
+           "op": "var",
+           "name": "alpha_pos"
+          }
+         ]
+        },
+        {
+         "op": "var",
+         "name": "dw_alpha"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "source": {
+   "paper": "hagan2002",
+   "sde": [
+    "hagan2002.forward_sde",
+    "hagan2002.vol_sde"
+   ],
+   "correlation": "hagan2002.correlation",
+   "scheme": "euler-full-truncation"
+  }
+ }
+]

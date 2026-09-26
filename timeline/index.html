@@ -1,0 +1,180 @@
+<title>WWMath Time Machine</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #f3f5f7; --surface: #ffffff; --raised: #eef1f4;
+    --ink: #16202c; --muted: #56606d; --faint: #8a939e; --line: #d8dde3;
+    --cursor: #b23a48; --cursor-soft: #f6e3e5;
+    --lane-foundations: #8a6d1f; --lane-normal: #2f6690; --lane-lognormal: #3a7a55; --lane-smile: #7a4e8a;
+    --ok: #2f7a4a; --warn: #a1561d;
+    --serif: "Spectral", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #0e1217; --surface: #151b22; --raised: #1b232c;
+      --ink: #e7ebf0; --muted: #9aa5b1; --faint: #6c7682; --line: #26303b;
+      --cursor: #ff7a86; --cursor-soft: #3a1c21;
+      --lane-foundations: #d6b25a; --lane-normal: #6fb0e0; --lane-lognormal: #72c692; --lane-smile: #c49ad6;
+      --ok: #72c692; --warn: #e3a064;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #0e1217; --surface: #151b22; --raised: #1b232c;
+    --ink: #e7ebf0; --muted: #9aa5b1; --faint: #6c7682; --line: #26303b;
+    --cursor: #ff7a86; --cursor-soft: #3a1c21;
+    --lane-foundations: #d6b25a; --lane-normal: #6fb0e0; --lane-lognormal: #72c692; --lane-smile: #c49ad6;
+    --ok: #72c692; --warn: #e3a064;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.55 var(--sans); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 56px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
+  h1 { font: 600 clamp(26px, 4vw, 36px)/1.1 var(--serif); margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+  .sub { color: var(--muted); margin: 6px 0 0; max-width: 70ch; }
+  .repo { font: 12px var(--mono); color: var(--faint); }
+  .repo a { color: var(--muted); }
+  a { color: var(--lane-normal); }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--cursor); outline-offset: 2px; }
+
+  .asof { margin-top: 22px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 20px; align-items: end; }
+  .asof-label { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cursor); }
+  .asof-date { font: 600 clamp(28px, 5vw, 44px)/1 var(--serif); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .asof-hint { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .controls button, .controls label {
+    font: 500 12px var(--mono); border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+  .controls button:hover { border-color: var(--cursor); }
+  .controls .zoom { background: var(--raised); }
+  .controls input { font: 12px var(--mono); border: 0; background: transparent; color: var(--ink); width: 7.5em; }
+
+  #timeline { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+  .vis-timeline { border: 0 !important; font-family: var(--sans); }
+  .vis-panel.vis-center, .vis-panel.vis-left, .vis-panel.vis-top, .vis-panel.vis-bottom { border-color: var(--line) !important; }
+  .vis-time-axis .vis-text { color: var(--muted) !important; font: 11px var(--mono); }
+  .vis-time-axis .vis-grid.vis-minor { border-color: var(--line) !important; opacity: .55; }
+  .vis-time-axis .vis-grid.vis-major { border-color: var(--line) !important; }
+  .vis-labelset .vis-label { color: var(--ink) !important; border-color: var(--line) !important; }
+  .vis-labelset .vis-label .vis-inner { font: 600 12px var(--sans); padding: 8px 10px; }
+  .vis-labelset .vis-label small { display: block; font: 400 11px var(--sans); color: var(--muted); }
+  .vis-foreground .vis-group { border-color: var(--line) !important; }
+  .vis-item { border-radius: 6px; font: 500 12px var(--sans); color: var(--ink); background: var(--surface); border-width: 1px; }
+  .vis-item.vis-box { border-left-width: 4px; }
+  .vis-item .vis-item-content { padding: 3px 8px; }
+  .vis-item small { display: block; font: 11px var(--mono); color: var(--muted); }
+  .vis-item.lane-foundations { border-color: var(--lane-foundations); }
+  .vis-item.lane-normal { border-color: var(--lane-normal); }
+  .vis-item.lane-lognormal { border-color: var(--lane-lognormal); }
+  .vis-item.lane-smile { border-color: var(--lane-smile); }
+  .vis-item.vis-line { border-color: var(--line); }
+  .vis-item.vis-dot { border-color: var(--faint); }
+  .vis-item.later { font: 11px var(--mono); color: var(--muted); border-style: dashed; background: var(--raised); }
+  .vis-item.future { opacity: .32; }
+  .vis-item.vis-selected { background: var(--cursor-soft) !important; border-color: var(--cursor) !important; box-shadow: 0 0 0 1px var(--cursor); z-index: 2; }
+  .vis-custom-time.asof { background: var(--cursor); width: 3px; cursor: ew-resize; }
+  .vis-custom-time.asof .vis-custom-time-marker { background: var(--cursor); color: #fff; font: 600 11px var(--mono); border-radius: 4px; padding: 2px 6px; }
+  .vis-current-time { background: var(--faint); }
+
+  .panels { margin-top: 20px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; }
+  @media (max-width: 860px) { .panels { grid-template-columns: 1fr; } .asof { grid-template-columns: 1fr; } .controls { justify-content: flex-start; } }
+  @media (max-width: 600px) {
+    .vis-labelset .vis-label small { display: none; }
+    .vis-labelset .vis-label .vis-inner { max-width: 84px; white-space: normal; font-size: 11px; padding: 6px; }
+    ol.known li { grid-template-columns: 6.5em minmax(0, 1fr); }
+  }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+  .panel h2 { font: 600 20px/1.2 var(--serif); margin: 0 0 4px; text-wrap: balance; }
+  .panel .kicker { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+  .stat { background: var(--raised); border-radius: 8px; padding: 10px; }
+  .stat b { display: block; font: 600 22px var(--serif); font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 12px; color: var(--muted); }
+  ol.known { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  ol.known li { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 10px; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+  ol.known li:hover { background: var(--raised); }
+  ol.known li .d { font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  ol.known li .n { font-weight: 500; }
+  ol.known li .n small { color: var(--muted); font-weight: 400; }
+  ol.known li.lane-foundations { border-left: 3px solid var(--lane-foundations); }
+  ol.known li.lane-normal { border-left: 3px solid var(--lane-normal); }
+  ol.known li.lane-lognormal { border-left: 3px solid var(--lane-lognormal); }
+  ol.known li.lane-smile { border-left: 3px solid var(--lane-smile); }
+  .next { margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .note { margin-top: 12px; padding: 10px 12px; border-left: 3px solid var(--warn); background: var(--raised); border-radius: 0 6px 6px 0; font-size: 13px; }
+  .note b { color: var(--warn); }
+
+  .meta { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 12px; margin: 12px 0; font-size: 13px; }
+  .meta dt { color: var(--faint); font: 12px var(--mono); }
+  .meta dd { margin: 0; overflow-wrap: anywhere; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+  .chip { font: 500 11px var(--mono); border-radius: 999px; padding: 2px 8px; border: 1px solid var(--line); color: var(--muted); }
+  .chip.ok { color: var(--ok); border-color: currentColor; }
+  .chip.warn { color: var(--warn); border-color: currentColor; }
+  .formulas { margin-top: 14px; display: grid; gap: 10px; }
+  .formula { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .formula .fh { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 13px; }
+  .formula .fh b { font-weight: 600; }
+  .formula .fid { font: 11px var(--mono); color: var(--faint); }
+  .formula .tex { overflow-x: auto; padding: 8px 0 2px; font-size: 14px; }
+  .formula .fn { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .empty { color: var(--muted); font-size: 14px; }
+  footer { margin-top: 28px; color: var(--faint); font-size: 12px; max-width: 90ch; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>WWMath Time Machine</h1>
+      <p class="sub">The option-pricing record as it stood on any date, from Euclid to today. Drag the red as-of line, or pick a date, to see exactly which mathematics existed then.</p>
+    </div>
+    <div class="repo" id="repo"></div>
+  </header>
+
+  <section class="asof" aria-label="As-of date">
+    <div>
+      <div class="asof-label">As of</div>
+      <div class="asof-date" id="asof-date">—</div>
+      <div class="asof-hint" id="asof-hint"></div>
+    </div>
+    <div class="controls">
+      <label for="asof-year">Year <input id="asof-year" type="number" step="1" value="2026" aria-label="As-of year (negative for BC)"></label>
+      <button type="button" data-year="-300">300 BC</button>
+      <button type="button" data-year="1202">1202</button>
+      <button type="button" data-year="1900">1900</button>
+      <button type="button" data-year="1976">1976</button>
+      <button type="button" data-year="1993">1993</button>
+      <button type="button" data-year="2007">2007</button>
+      <button type="button" data-year="today">Today</button>
+      <button type="button" class="zoom" id="zoom-all">All of math</button>
+      <button type="button" class="zoom" id="zoom-modern">1890 to now</button>
+    </div>
+  </section>
+
+  <div id="timeline" role="application" aria-label="Timeline of works"></div>
+
+  <div class="panels">
+    <section class="panel" id="record" aria-live="polite"></section>
+    <section class="panel" id="detail"></section>
+  </div>
+
+  <footer id="footer"></footer>
+</div>
+
+<script>
+  window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "global" },
+                     startup: { typeset: false } };
+</script>
+<script src="vendor/vis-timeline-graph2d.min.js"></script>
+<script src="vendor/mathjax-tex-svg.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>

@@ -1,0 +1,64 @@
+// End-to-end: serve harness/web, open it in headless Chromium, run the conformance,
+// and assert every compiled engine is bit-identical to the Rust reference.
+import { chromium } from "playwright-core";
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { existsSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const web = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "web");
+const types = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json",
+  ".wasm": "application/wasm" };
+const server = createServer(async (req, res) => {
+  const p = path.join(web, decodeURIComponent(new URL(req.url, "http://x").pathname).replace(/\/$/, "/index.html"));
+  let body;
+  try { body = await readFile(p); } catch { res.writeHead(404); res.end(); return; }
+  res.writeHead(200, { "content-type": types[path.extname(p)] ?? "text/plain; charset=utf-8" });
+  res.end(body);
+}).listen(0);
+const port = server.address().port;
+
+function chromiumPath() {
+  // Use a preinstalled Chromium when present (no browser download needed).
+  const base = process.env.PLAYWRIGHT_BROWSERS_PATH ?? "/opt/pw-browsers";
+  if (!existsSync(base)) return undefined;
+  for (const d of readdirSync(base).filter((d) => d.startsWith("chromium-"))) {
+    for (const rel of ["chrome-linux/chrome", "chrome-linux64/chrome"]) {
+      const p = path.join(base, d, rel);
+      if (existsSync(p)) return p;
+    }
+  }
+  return undefined;
+}
+
+const browser = await chromium.launch({ executablePath: chromiumPath() });
+const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const errors = [];
+page.on("pageerror", (e) => errors.push(String(e)));
+await page.goto(`http://localhost:${port}/`);
+const kernels = await page.evaluate(async () => (await (await fetch("manifest.json")).json()).kernels.map((k) => k.name));
+let allSame = true;
+for (const name of kernels) {
+  await page.click(`#kernel-tabs button[data-name="${name}"]`);
+  await page.waitForFunction((n) => window.__conformance?.kernel === n && !document.getElementById("run").disabled,
+    name, { timeout: 180000 });
+  const status = (await page.textContent("#status")).trim();
+  const res = await page.evaluate(() => window.__conformance.res);
+  const same = res.engines.every((e) => e.bit_identical);
+  allSame &&= same;
+  console.log(`${name.padEnd(20)} ${status}`);
+  if (name === "bates_step") await page.screenshot({ path: path.join(web, "..", "test", "screenshot.png"), fullPage: true });
+}
+const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+await mobile.goto(`http://localhost:${port}/`);
+await mobile.waitForFunction(() => window.__conformance, null, { timeout: 180000 });
+const overflow = await mobile.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+await browser.close();
+server.close();
+
+const ok = !errors.length && allSame && !overflow;
+if (errors.length) console.log("page errors:", errors);
+if (overflow) console.log("FAIL: horizontal page scroll at 390px");
+console.log(ok ? "OK (browser)" : "FAIL (browser)");
+process.exit(ok ? 0 : 1);

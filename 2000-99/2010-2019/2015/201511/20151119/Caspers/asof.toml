@@ -1,0 +1,24 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "caspers2015"
+name = "Caspers"
+title = "Implementation of the ZABR Model"
+authors = ["Peter Caspers"]
+
+[as_of]
+date = "2015-11-19"
+precision = "day"
+event = "Posted to SSRN (abstract 2692048); written 7 September 2013"
+
+[publication]
+year = 2015
+venue = "SSRN working paper 2692048"
+doi = "10.2139/ssrn.2692048"
+landing = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2692048"
+access = "free-registration"
+notes = "Written 2013, posted Nov 2015. Re-derives Andreasen-Huge with intermediate steps and checks the numbers against QuantLib."
+role = "Step-by-step ZABR derivation; best source for transcribing the expansions."
+
+[timeline]
+lane = "smile"

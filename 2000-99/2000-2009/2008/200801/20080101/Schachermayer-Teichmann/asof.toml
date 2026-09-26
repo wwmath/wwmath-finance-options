@@ -1,0 +1,26 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "schachermayer2008"
+name = "Schachermayer-Teichmann"
+title = "How close are the option pricing formulas of Bachelier and Black-Merton-Scholes?"
+authors = ["Walter Schachermayer", "Josef Teichmann"]
+
+[as_of]
+date = "2008-01-01"
+precision = "month"
+event = "Published in Mathematical Finance 18(1), January 2008"
+
+[publication]
+year = 2008
+venue = "Mathematical Finance"
+volume = "18(1)"
+pages = "155-170"
+access = "subscription"
+role = "Modern statement of the Bachelier call price."
+
+[files]
+formulas = "formulas.toml"
+
+[timeline]
+lane = "normal"

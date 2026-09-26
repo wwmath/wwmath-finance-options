@@ -1,0 +1,28 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "andreasen2011"
+name = "Andreasen-Huge"
+title = "ZABR -- Expansions for the Masses"
+authors = ["Jesper Andreasen", "Brian Norsk Huge"]
+
+[as_of]
+date = "2011-12-24"
+precision = "day"
+event = "Posted to SSRN (abstract 1980726), preliminary version dated December 2011"
+
+[publication]
+year = 2011
+venue = "SSRN working paper 1980726"
+doi = "10.2139/ssrn.1980726"
+landing = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1980726"
+access = "free-registration"
+notes = "The original ZABR paper (Dec 2011). The '2015' ZABR reference is Caspers' implementation note below."
+role = "SABR generalised with a CEV power gamma on the volatility."
+
+[files]
+formulas = "formulas.toml"
+local_pdf = "Andreasen-Hudge-ZABR-ssrn-1980726.pdf"
+
+[timeline]
+lane = "smile"

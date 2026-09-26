@@ -1,0 +1,623 @@
+{
+ "order": [
+  "c",
+  "cpp",
+  "fortran",
+  "zig",
+  "rust",
+  "carbon",
+  "wasm"
+ ],
+ "reference": "rust",
+ "labels": {
+  "c": "C",
+  "cpp": "C++",
+  "fortran": "Fortran",
+  "zig": "Zig",
+  "rust": "Rust",
+  "carbon": "Carbon",
+  "wasm": "Direct WASM"
+ },
+ "tiers": {
+  "c": 1,
+  "cpp": 1,
+  "rust": 1,
+  "zig": 1,
+  "fortran": 2,
+  "carbon": 3,
+  "wasm": 4
+ },
+ "engines": {
+  "c": {
+   "wasm": "engines/c.wasm",
+   "source": "src/kernels.c",
+   "toolchain": "clang 18 --target=wasm32",
+   "bytes": 1388
+  },
+  "cpp": {
+   "wasm": "engines/cpp.wasm",
+   "source": "src/kernels.cpp",
+   "toolchain": "clang++ 18 --target=wasm32",
+   "bytes": 1390
+  },
+  "fortran": {
+   "wasm": "engines/fortran.wasm",
+   "source": "src/kernels.f90",
+   "toolchain": "flang-new 18 (LLVM IR) -> LLVM wasm32 back end",
+   "bytes": 1383
+  },
+  "zig": {
+   "wasm": "engines/zig.wasm",
+   "source": "src/kernels.zig",
+   "toolchain": "zig 0.13 wasm32-freestanding",
+   "bytes": 1156
+  },
+  "rust": {
+   "wasm": "engines/rust.wasm",
+   "source": "src/kernels.rs",
+   "toolchain": "rustc --target wasm32-unknown-unknown",
+   "bytes": 1466
+  },
+  "carbon": {
+   "wasm": null,
+   "source": "src/kernels.carbon",
+   "toolchain": "none available (experimental tier)"
+  },
+  "wasm": {
+   "wasm": "engines/wasm.wasm",
+   "source": "src/kernels.wat",
+   "toolchain": "direct binary encoder (research/tools/emitters.py); WAT checked by wat2wasm",
+   "bytes": 1122
+  }
+ },
+ "ir_exp_log_max_ulp": {
+  "exp": 1.0,
+  "log": 1.0
+ },
+ "kernels": [
+  {
+   "name": "normal_heston_step",
+   "label": "Normal Heston (Sidani 2014)",
+   "source": {
+    "paper": "sidani2014",
+    "sde": [
+     "sidani2014.forward_sde",
+     "sidani2014.variance_sde"
+    ],
+    "correlation": "sidani2014.correlation",
+    "scheme": "euler-full-truncation"
+   },
+   "abi": [
+    "x",
+    "v",
+    "dt",
+    "kappa",
+    "theta",
+    "xi",
+    "rho",
+    "z1",
+    "z2"
+   ],
+   "states": [
+    "x",
+    "v"
+   ],
+   "params": [
+    "kappa",
+    "theta",
+    "xi",
+    "rho"
+   ],
+   "randoms": [
+    {
+     "name": "z1",
+     "kind": "normal",
+     "drives": "Z"
+    },
+    {
+     "name": "z2",
+     "kind": "normal",
+     "drives": "W"
+    }
+   ],
+   "jump": null,
+   "extra": [],
+   "discount_rate": null,
+   "defaults": {
+    "x": 100.0,
+    "v": 64.0,
+    "kappa": 1.5,
+    "theta": 81.0,
+    "xi": 6.0,
+    "rho": -0.5,
+    "T": 1.0,
+    "paths": 4000,
+    "steps": 100,
+    "seed": 20260925,
+    "strikes": [
+     80.0,
+     85.0,
+     90.0,
+     95.0,
+     100.0,
+     105.0,
+     110.0,
+     115.0,
+     120.0
+    ]
+   },
+   "mc_bias_allowance": 0.02,
+   "ir_sample": {
+    "inputs": {
+     "x": 100.0,
+     "v": 64.0,
+     "dt": 0.01,
+     "kappa": 1.5,
+     "theta": 81.0,
+     "xi": 6.0,
+     "rho": -0.5,
+     "z1": 0.3,
+     "z2": -1.1
+    },
+    "outputs": [
+     99.1178976446697,
+     65.695
+    ]
+   },
+   "references": {
+    "strikes": [
+     80.0,
+     85.0,
+     90.0,
+     95.0,
+     100.0,
+     105.0,
+     110.0,
+     115.0,
+     120.0
+    ],
+    "formula": {
+     "id": "sidani2014.call",
+     "label": "Sidani Fourier (reproduces his Table 1)",
+     "prices": [
+      20.065512990955355,
+      15.210989776574518,
+      10.606818757673526,
+      6.534202784018136,
+      3.363216567606316,
+      1.3496435545535626,
+      0.39232307841710234,
+      0.07770791563364998,
+      0.010173370923055813
+     ]
+    },
+    "quantlib": null
+   }
+  },
+  {
+   "name": "heston_step",
+   "label": "Heston (1993)",
+   "source": {
+    "paper": "heston1993",
+    "sde": [
+     "heston1993.spot_sde",
+     "heston1993.variance_sde"
+    ],
+    "correlation": "heston1993.correlation",
+    "scheme": "euler-full-truncation"
+   },
+   "abi": [
+    "s",
+    "v",
+    "dt",
+    "r",
+    "kappa",
+    "theta",
+    "sigma",
+    "rho",
+    "z1",
+    "z2"
+   ],
+   "states": [
+    "s",
+    "v"
+   ],
+   "params": [
+    "r",
+    "kappa",
+    "theta",
+    "sigma",
+    "rho"
+   ],
+   "randoms": [
+    {
+     "name": "z1",
+     "kind": "normal",
+     "drives": "z_2"
+    },
+    {
+     "name": "z2",
+     "kind": "normal",
+     "drives": "z_1"
+    }
+   ],
+   "jump": null,
+   "extra": [],
+   "discount_rate": "r",
+   "defaults": {
+    "s": 100.0,
+    "v": 0.04,
+    "r": 0.03,
+    "kappa": 1.5,
+    "theta": 0.04,
+    "sigma": 0.3,
+    "rho": -0.7,
+    "T": 1.0,
+    "paths": 4000,
+    "steps": 100,
+    "seed": 20260926,
+    "strikes": [
+     80.0,
+     85.0,
+     90.0,
+     95.0,
+     100.0,
+     105.0,
+     110.0,
+     115.0,
+     120.0
+    ]
+   },
+   "mc_bias_allowance": 0.05,
+   "ir_sample": {
+    "inputs": {
+     "s": 100.0,
+     "v": 0.04,
+     "dt": 0.01,
+     "r": 0.03,
+     "kappa": 1.5,
+     "theta": 0.04,
+     "sigma": 0.3,
+     "rho": -0.7,
+     "z1": 0.3,
+     "z2": -1.1
+    },
+    "outputs": [
+     98.03888574572058,
+     0.041800000000000004
+    ]
+   },
+   "references": {
+    "strikes": [
+     80.0,
+     85.0,
+     90.0,
+     95.0,
+     100.0,
+     105.0,
+     110.0,
+     115.0,
+     120.0
+    ],
+    "formula": {
+     "id": "albrecher2007.call_trap",
+     "label": "Heston (10), little-trap CF",
+     "prices": [
+      23.74004427776312,
+      19.61623682162474,
+      15.77369541418868,
+      12.277910903732902,
+      9.193318306728251,
+      6.5751745011047475,
+      4.458712017594557,
+      2.8473952974930334,
+      1.7048485171512233
+     ]
+    },
+    "quantlib": {
+     "label": "QuantLib AnalyticHestonEngine",
+     "prices": [
+      23.740044277763115,
+      19.61623682162475,
+      15.773695414188712,
+      12.277910903732899,
+      9.19331830672825,
+      6.575174501104753,
+      4.458712017594551,
+      2.847395297493035,
+      1.7048485171512187
+     ]
+    }
+   }
+  },
+  {
+   "name": "bates_step",
+   "label": "Bates (1996)",
+   "source": {
+    "paper": "bates1996",
+    "sde": [
+     "bates1996.spot_sde",
+     "bates1996.variance_sde"
+    ],
+    "correlation": "bates1996.correlation",
+    "scheme": "euler-full-truncation"
+   },
+   "abi": [
+    "s",
+    "v",
+    "dt",
+    "b",
+    "lambdastar",
+    "kbarstar",
+    "alpha",
+    "betastar",
+    "sigma_v",
+    "rho",
+    "z1",
+    "z2",
+    "dj"
+   ],
+   "states": [
+    "s",
+    "v"
+   ],
+   "params": [
+    "b",
+    "lambdastar",
+    "kbarstar",
+    "alpha",
+    "betastar",
+    "sigma_v",
+    "rho"
+   ],
+   "randoms": [
+    {
+     "name": "z1",
+     "kind": "normal",
+     "drives": "Z_v"
+    },
+    {
+     "name": "z2",
+     "kind": "normal",
+     "drives": "Z"
+    },
+    {
+     "name": "dj",
+     "kind": "compound_jump",
+     "drives": "q",
+     "mark": "k"
+    }
+   ],
+   "jump": {
+    "intensity": "lambdastar",
+    "mean_jump": "kbarstar",
+    "log_sd": "delta"
+   },
+   "extra": [
+    "r",
+    "delta"
+   ],
+   "discount_rate": "r",
+   "defaults": {
+    "s": 100.0,
+    "v": 0.04,
+    "b": 0.03,
+    "lambdastar": 0.5,
+    "kbarstar": -0.1,
+    "alpha": 0.06,
+    "betastar": 1.5,
+    "sigma_v": 0.4,
+    "rho": -0.6,
+    "r": 0.03,
+    "delta": 0.15,
+    "T": 1.0,
+    "paths": 4000,
+    "steps": 100,
+    "seed": 20260927,
+    "strikes": [
+     80.0,
+     85.0,
+     90.0,
+     95.0,
+     100.0,
+     105.0,
+     110.0,
+     115.0,
+     120.0
+    ]
+   },
+   "mc_bias_allowance": 0.05,
+   "ir_sample": {
+    "inputs": {
+     "s": 100.0,
+     "v": 0.04,
+     "dt": 0.01,
+     "b": 0.03,
+     "lambdastar": 0.5,
+     "kbarstar": -0.1,
+     "alpha": 0.06,
+     "betastar": 1.5,
+     "sigma_v": 0.4,
+     "rho": -0.6,
+     "z1": 0.3,
+     "z2": -1.1,
+     "dj": -0.05
+    },
+    "outputs": [
+     92.96,
+     0.0424
+    ]
+   },
+   "references": {
+    "strikes": [
+     80.0,
+     85.0,
+     90.0,
+     95.0,
+     100.0,
+     105.0,
+     110.0,
+     115.0,
+     120.0
+    ],
+    "formula": {
+     "id": "bates1996.call",
+     "label": "Bates Fourier",
+     "prices": [
+      24.485855209990103,
+      20.54948256752054,
+      16.886526606258634,
+      13.539293363276947,
+      10.547771825355436,
+      7.94779440748081,
+      5.767416480773558,
+      4.019906805655745,
+      2.693888863574035
+     ]
+    },
+    "quantlib": {
+     "label": "QuantLib BatesEngine",
+     "prices": [
+      24.48585520999069,
+      20.5494825675204,
+      16.886526606258705,
+      13.539293363277018,
+      10.547771825355419,
+      7.947794407480828,
+      5.7674164807735835,
+      4.019906805655751,
+      2.6938888635740668
+     ]
+    }
+   }
+  },
+  {
+   "name": "sabr_step",
+   "label": "SABR (Hagan 2002)",
+   "source": {
+    "paper": "hagan2002",
+    "sde": [
+     "hagan2002.forward_sde",
+     "hagan2002.vol_sde"
+    ],
+    "correlation": "hagan2002.correlation",
+    "scheme": "euler-full-truncation"
+   },
+   "abi": [
+    "f",
+    "alpha",
+    "dt",
+    "beta",
+    "nu",
+    "rho",
+    "z1",
+    "z2"
+   ],
+   "states": [
+    "f",
+    "alpha"
+   ],
+   "params": [
+    "beta",
+    "nu",
+    "rho"
+   ],
+   "randoms": [
+    {
+     "name": "z1",
+     "kind": "normal",
+     "drives": "W_2"
+    },
+    {
+     "name": "z2",
+     "kind": "normal",
+     "drives": "W_1"
+    }
+   ],
+   "jump": null,
+   "extra": [],
+   "discount_rate": null,
+   "defaults": {
+    "f": 100.0,
+    "alpha": 0.8,
+    "beta": 0.7,
+    "nu": 0.4,
+    "rho": -0.3,
+    "T": 1.0,
+    "paths": 4000,
+    "steps": 100,
+    "seed": 20260928,
+    "strikes": [
+     80.0,
+     85.0,
+     90.0,
+     95.0,
+     100.0,
+     105.0,
+     110.0,
+     115.0,
+     120.0
+    ]
+   },
+   "mc_bias_allowance": 0.08,
+   "ir_sample": {
+    "inputs": {
+     "f": 100.0,
+     "alpha": 0.8,
+     "dt": 0.01,
+     "beta": 0.7,
+     "nu": 0.4,
+     "rho": -0.3,
+     "z1": 0.3,
+     "z2": -1.1
+    },
+    "outputs": [
+     97.71049967278992,
+     0.8096000000000001
+    ]
+   },
+   "references": {
+    "strikes": [
+     80.0,
+     85.0,
+     90.0,
+     95.0,
+     100.0,
+     105.0,
+     110.0,
+     115.0,
+     120.0
+    ],
+    "formula": {
+     "id": "hagan2002.sigma_B + black1976.call",
+     "label": "Hagan (2.17)/(2.18) -> Black-76",
+     "prices": [
+      21.747527438650863,
+      17.698353787999444,
+      14.024730048517043,
+      10.796734111206241,
+      8.062853415016562,
+      5.8391461017261435,
+      4.105153020243215,
+      2.808513875065575,
+      1.8764816640877484
+     ]
+    },
+    "quantlib": {
+     "label": "QuantLib sabrVolatility -> blackFormula",
+     "prices": [
+      21.747527438650863,
+      17.698353787999437,
+      14.02473004851705,
+      10.796734111206241,
+      8.062853415016562,
+      5.8391461017261435,
+      4.105153020243215,
+      2.8085138750655716,
+      1.8764816640877413
+     ]
+    }
+   }
+  }
+ ]
+}

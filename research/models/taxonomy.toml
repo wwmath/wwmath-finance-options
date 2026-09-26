@@ -1,0 +1,105 @@
+# Models as compositions of mathematical primitives.
+#
+# Each model is a choice along four axes, not its own AST. The `sde` entries
+# point at formulas in papers/*.toml. The validator's `sde_reduction` checks
+# are how we prove that two papers share a component (e.g. ZABR at gamma = 1
+# is SABR).
+#
+#                       STOCHASTIC VOL
+#                   no jumps          jumps
+#   Lognormal       Heston 1993       Bates 1996
+#   Normal          Sidani 2014       Alòs/Burés/Vives 2026
+
+schema_version = 1
+
+[axes.underlying]
+description = "How the price's diffusion coefficient scales with the price"
+values = ["arithmetic", "geometric", "cev"]
+
+[axes.volatility]
+description = "The volatility or variance driver"
+values = ["constant", "cir_variance", "lognormal_vol", "cev_vol", "adapted_process"]
+
+[axes.jumps]
+description = "Jump component added to the price"
+values = ["none", "compound_poisson_lognormal", "pure_jump_levy"]
+
+[axes.correlation]
+description = "Whether the price and volatility Brownian motions are correlated"
+values = ["n/a", "rho"]
+
+[[models]]
+id = "bachelier"
+paper = "bachelier1900"
+underlying = "arithmetic"
+volatility = "constant"
+jumps = "none"
+correlation = "n/a"
+sde = ["schachermayer2008.sde"]
+
+[[models]]
+id = "black76"
+paper = "black1976"
+underlying = "geometric"
+volatility = "constant"
+jumps = "none"
+correlation = "n/a"
+sde = ["black1976.sde"]
+
+[[models]]
+id = "heston"
+paper = "heston1993"
+underlying = "geometric"
+volatility = "cir_variance"
+jumps = "none"
+correlation = "rho"
+sde = ["heston1993.spot_sde", "heston1993.variance_sde"]
+
+[[models]]
+id = "bates"
+paper = "bates1996"
+underlying = "geometric"
+volatility = "cir_variance"
+jumps = "compound_poisson_lognormal"
+correlation = "rho"
+sde = ["bates1996.spot_sde", "bates1996.variance_sde"]
+notes = "Heston + jumps: the no-jump limit is checked numerically against Heston eq. (10)."
+
+[[models]]
+id = "sabr"
+paper = "hagan2002"
+underlying = "cev"
+volatility = "lognormal_vol"
+jumps = "none"
+correlation = "rho"
+sde = ["hagan2002.forward_sde", "hagan2002.vol_sde"]
+
+[[models]]
+id = "zabr"
+paper = "andreasen2011"
+underlying = "cev"
+volatility = "cev_vol"
+jumps = "none"
+correlation = "rho"
+sde = ["andreasen2011.cev_spot_sde", "andreasen2011.cev_vol_sde"]
+notes = "gamma = 1 reduces to SABR (symbolic check)."
+
+[[models]]
+id = "normal_heston"
+paper = "sidani2014"
+underlying = "arithmetic"
+volatility = "cir_variance"
+jumps = "none"
+correlation = "rho"
+sde = ["sidani2014.forward_sde", "sidani2014.variance_sde"]
+notes = "Same variance SDE as Heston; the price diffusion drops the factor S."
+
+[[models]]
+id = "jump_sv_bachelier"
+paper = "alos2026"
+underlying = "arithmetic"
+volatility = "adapted_process"
+jumps = "pure_jump_levy"
+correlation = "rho"
+sde = ["alos2026.model"]
+notes = "Not literally 'Bates with arithmetic dynamics': the volatility is a general adapted process and the jumps are any pure-jump Levy martingale (compound Poisson and some infinite-activity cases)."

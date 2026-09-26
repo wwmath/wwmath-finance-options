@@ -1,0 +1,25 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "albrecher2007"
+name = "Albrecher-Mayer-Schoutens-Tistaert"
+title = "The Little Heston Trap"
+authors = ["Hansjörg Albrecher", "Philipp Mayer", "Wim Schoutens", "Jurgen Tistaert"]
+
+[as_of]
+date = "2007-01-01"
+precision = "month"
+event = "Published in Wilmott Magazine, January 2007"
+
+[publication]
+year = 2007
+venue = "Wilmott Magazine (January)"
+pages = "83-92"
+access = "subscription"
+role = "Branch-cut-safe form of the Heston characteristic function (used for Bates too)."
+
+[files]
+formulas = "formulas.toml"
+
+[timeline]
+lane = "lognormal"

@@ -1,0 +1,19 @@
+# Works held or cited but not yet placed in the as-of tree, because their date or
+# identity is not verified. A work moves into its <date>/<Name>/ leaf once it is.
+
+[[works]]
+id = "alos2025"
+title = "On the implied volatility of European and Asian call options under the stochastic volatility Bachelier model"
+venue = "International Journal of Theoretical and Applied Finance"
+doi = "10.1142/S0219024925500037"
+landing = "https://www.worldscientific.com/doi/10.1142/S0219024925500037"
+preprint = "https://arxiv.org/abs/2308.15341"
+reason = "Authorship and date unverified: sources disagree (Alos & Bures; Alos, Nualart & Pravosud). Check the DOI landing page before filing."
+
+[[works]]
+id = "crisostomo2014"
+title = "An Analysis of the Heston Stochastic Volatility Model: Implementation and Calibration using Matlab"
+authors = ["Ricardo Crisostomo"]
+preprint = "https://arxiv.org/abs/1502.02963"
+local_pdf = "Sidani_2014_1502.02963v2.pdf"  # not committed
+reason = "Uploaded under a Sidani file name by mistake. PDF is dated December 2014; the arXiv submission day is not yet confirmed. Not Sidani (2014), SSRN 2445328, which is still needed."

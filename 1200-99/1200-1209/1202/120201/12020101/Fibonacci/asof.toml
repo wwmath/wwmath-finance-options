@@ -1,0 +1,39 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "fibonacci1202"
+name = "Fibonacci"
+title = "Liber Abaci"
+authors = ["Leonardo of Pisa (Fibonacci)"]
+
+[as_of]
+date = "1202-01-01"
+precision = "year"
+event = "Liber Abaci completed in Pisa (first edition); no copy of the 1202 text survives"
+
+[[later_events]]
+date = "1228-01-01"
+precision = "year"
+event = "Revised second edition, dedicated to Michael Scot; every surviving manuscript is of this revision"
+
+[[later_events]]
+date = "1857-01-01"
+precision = "year"
+event = "First printed edition, B. Boncompagni, Scritti di Leonardo Pisano, vol. 1 (Rome)"
+
+[[later_events]]
+date = "2002-01-01"
+precision = "year"
+event = "L. E. Sigler, Fibonacci's Liber Abaci: A Translation into Modern English (Springer)"
+
+[publication]
+venue = "Manuscript, Pisa"
+access = "Latin text public domain (Boncompagni 1857); Sigler 2002 translation in copyright"
+notes = "Chapter 12 holds the rabbit problem; chapters 8-12 include merchant arithmetic, interest and present-value problems (see Goetzmann, 'Fibonacci and the Financial Revolution', 2004)."
+role = "The Fibonacci recurrence; the earliest European present-value calculations (pending transcription)."
+
+[files]
+formulas = "formulas.toml"
+
+[timeline]
+lane = "foundations"

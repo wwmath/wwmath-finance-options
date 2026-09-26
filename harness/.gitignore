@@ -1,0 +1,4 @@
+host/target/
+test/node_modules/
+test/screenshot.png
+generated/obj/
