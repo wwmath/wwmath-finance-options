@@ -3,9 +3,10 @@
 **World Wide Math: the historical record of the mathematics behind option pricing, from Euclid to today.**
 
 Browse it in the **[WWMath Time Machine](timeline/README.md)**: a vis-timeline view of
-every leaf, with an as-of line that replays the record on any date. It is a single
-self-contained file, so after cloning, open `timeline/wwmath-time-machine.html` directly
-(no web server needed).
+every leaf, with an as-of line that replays the record on any date. Live at
+**https://wwmath.github.io/wwmath-finance-options/** (GitHub Pages, deployed from `main`
+by `.github/workflows/pages.yml`). It is a single self-contained file, so a clone can
+also open `timeline/wwmath-time-machine.html` directly, with no web server.
 
 Every work lives in the folder of the date it became public, and each folder
 holds the work as it stood on that date. That means the paper's own formulas,

@@ -11,8 +11,9 @@ Bates 1996 formulas written in the 2007 little-trap form).
 **To view it, open `timeline/wwmath-time-machine.html`.** It is one self-contained file
 (data, app, vis-timeline and MathJax inlined, about 2.7 MB), so double-clicking it in a
 clone works with no web server, offline included. Only the Google Fonts are fetched,
-and the page falls back to system fonts without them. GitHub's file view shows HTML
-as source, so to open it from GitHub itself use Pages or download the raw file.
+and the page falls back to system fonts without them. Online it is published at
+https://wwmath.github.io/wwmath-finance-options/ by `.github/workflows/pages.yml` on
+every push to `main`. The workflow deploys only this page, not the repo.
 
 ```bash
 python timeline/build.py                 # regenerate data.js and wwmath-time-machine.html
