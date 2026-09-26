@@ -23,3 +23,6 @@ role = "Black-76: lognormal forward/futures option formula."
 
 [files]
 formulas = "formulas.toml"
+
+[timeline]
+lane = "lognormal"

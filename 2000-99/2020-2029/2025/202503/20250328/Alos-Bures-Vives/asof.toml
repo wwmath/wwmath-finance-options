@@ -32,3 +32,6 @@ role = "Normal SV + pure-jump Levy jumps: the 'normal Bates' corner."
 [files]
 formulas = "formulas.toml"
 pdf = "Alòs-Burés-Vives-2503.22282v1.pdf"
+
+[timeline]
+lane = "normal"

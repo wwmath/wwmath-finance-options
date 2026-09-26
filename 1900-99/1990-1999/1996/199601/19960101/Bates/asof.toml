@@ -23,3 +23,6 @@ role = "Heston + lognormal Poisson jumps (lognormal, stochastic vol, jumps)."
 
 [files]
 formulas = "formulas.toml"
+
+[timeline]
+lane = "lognormal"

@@ -102,16 +102,17 @@ class Library:
     def asof_audit(self) -> tuple[list[str], list[str]]:
         """(errors, exceptions): imports must not point forward in time; formulas that
         use a later work are listed as exceptions to be resolved from the original PDF."""
+        import asof
         errors, exceptions = [], []
         for p in self.papers.values():
             for imp in p.doc["paper"].get("imports", []):
-                if self.papers[imp].as_of > p.as_of:
+                if asof.sort_key(self.papers[imp].as_of) > asof.sort_key(p.as_of):
                     errors.append(f"{p.id} ({p.as_of}) imports later work {imp} "
                                   f"({self.papers[imp].as_of})")
             for fid, f in p.formulas.items():
                 for w in f.get("uses_later_work", []):
                     later = self.index[w]["asof"]["as_of"]["date"]
-                    if later > p.as_of:
+                    if asof.sort_key(later) > asof.sort_key(p.as_of):
                         exceptions.append(f"{fid} ({p.as_of}) uses {w} ({later})")
                     else:
                         errors.append(f"{fid}: uses_later_work names {w}, which is not later")

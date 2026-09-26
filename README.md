@@ -1,6 +1,9 @@
 # wwmath-finance-options
 
-**World Wide Math: the historical record of option-pricing mathematics.**
+**World Wide Math: the historical record of the mathematics behind option pricing, from Euclid to today.**
+
+Browse it in the **[WWMath Time Machine](timeline/README.md)** (`timeline/`): a
+vis-timeline view of every leaf, with an as-of line that replays the record on any date.
 
 Every work lives in the folder of the date it became public, and each folder
 holds the work as it stood on that date. That means the paper's own formulas,
@@ -12,7 +15,8 @@ historical record; the `wwm-*` repos are the living implementation.
 ## The as-of tree
 
 ```
-<century>/<decade>/<year>/<yyyymm>/<yyyymmdd>/<Name>/
+<century>/<decade>/<year>/<yyyymm>/<yyyymmdd>/<Name>/      AD: 1900-99/1900-1909/1900/190003/19000329/Bachelier
+                                                         BC: 0300-99BC/0300-0309BC/0300BC/0300BC01/0300BC0101/Euclid
     asof.toml       as-of date + precision, the event on that date, later events,
                     bibliographic record, files
     formulas.toml   Math AST library entry (the work's formulas as JSON ASTs in TOML)
@@ -21,6 +25,8 @@ historical record; the `wwm-*` repos are the living implementation.
 
 | as-of | leaf | event | formulas |
 |---|---|---|---|
+| c. 300 BC | [`0300-99BC/0300-0309BC/0300BC/0300BC01/0300BC0101/Euclid`](0300-99BC/0300-0309BC/0300BC/0300BC01/0300BC0101/Euclid) | *Elements* compiled in Alexandria | I.47 (Pythagoras), IX.35 (geometric progression) and its closed-form sum (restated; text pending) |
+| 1202 | [`1200-99/1200-1209/1202/120201/12020101/Fibonacci`](1200-99/1200-1209/1202/120201/12020101/Fibonacci) | *Liber Abaci* completed (the surviving text is the 1228 revision) | the rabbit recurrence, 377 pairs after a year (restated; merchant and interest chapters pending) |
 | 1900-03-29 | [`1900-99/1900-1909/1900/190003/19000329/Bachelier`](1900-99/1900-1909/1900/190003/19000329/Bachelier) | thesis defended at the Sorbonne | density, positive expectation, a = k√t (verified, pp. 38, 53) |
 | 1976-01 (issue) | [`1900-99/1970-1979/1976/197601/19760101/Black`](1900-99/1970-1979/1976/197601/19760101/Black) | JFE 3(1–2), Jan–Mar 1976 | Black-76 call, put, d1, d2, intrinsic |
 | 1993-04 | [`1900-99/1990-1999/1993/199304/19930401/Heston`](1900-99/1990-1999/1993/199304/19930401/Heston) | RFS 6(2) | (1), (4), (5), (10), (11), (12), (17), (18), verified pp. 328–331 |
@@ -43,8 +49,10 @@ historical record; the `wwm-*` repos are the living implementation.
   separated from later work carries `uses_later_work` and is reported as an
   as-of exception. Today that's Bates' CF, written in the 2007 form until the
   Bates PDF is transcribed.
-- **Precision is recorded.** When only the month or issue is known, the day
-  folder is `01` and `asof.toml` says so.
+- **Precision is recorded.** When only the month, issue, year or an approximate
+  (`circa`) date is known, the missing parts are `01` and `asof.toml` says so.
+- **BC dates** use a `BC` suffix on each folder and count years as historians do
+  (there is no year 0). Chronological order comes from the date, not the folder name.
 - **Unverified works stay out of the tree.** A work with an unverified date or
   identity waits in `research/unfiled.toml`.
 

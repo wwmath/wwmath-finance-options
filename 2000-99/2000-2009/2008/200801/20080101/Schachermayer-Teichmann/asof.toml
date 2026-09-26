@@ -21,3 +21,6 @@ role = "Modern statement of the Bachelier call price."
 
 [files]
 formulas = "formulas.toml"
+
+[timeline]
+lane = "normal"

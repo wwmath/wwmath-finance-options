@@ -22,3 +22,6 @@ role = "Normal (arithmetic) Heston: normal spot + square-root variance, no jumps
 [files]
 formulas = "formulas.toml"
 pdf = "Sidani-Normal-ssrn-2445328.pdf"
+
+[timeline]
+lane = "normal"

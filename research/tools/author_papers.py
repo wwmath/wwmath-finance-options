@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from mathast import (  # noqa: E402
-    I, INF, PI, add, apply, approx, call, const, d, def_key, distributed, div, eq, exp,
+    I, INF, PI, _n, add, apply, approx, call, const, d, def_key, distributed, div, eq, exp,
     expect, idx, integral, latex, log, mul, neg, num, pow_, sde, sqrt, sub, sym, to_json,
 )
 
@@ -1206,7 +1206,117 @@ def oracle_checks() -> dict[str, list[dict]]:
     }
 
 
-PAPERS = [bachelier, black, heston, bates, sabr, zabr, sidani, alos]
+# ---------------------------------------------------------------------------
+# Euclid, Elements (c. 300 BC) and Fibonacci, Liber Abaci (1202)
+# ---------------------------------------------------------------------------
+
+def _sum(body, var, lo, hi):
+    return {"op": "Sum", "body": body, "var": sym(var), "lower": _n(lo), "upper": _n(hi)}
+
+
+def _piecewise(pieces, otherwise):
+    return {"op": "Piecewise", "pieces": [{"value": _n(v), "cond": c} for v, c in pieces],
+            "otherwise": _n(otherwise)}
+
+
+def _lt(a, b):
+    return {"op": "Lt", "args": [_n(a), _n(b)]}
+
+
+def euclid():
+    a, b, c = sym("a"), sym("b"), sym("c")
+    A, r, n, k = sym("A"), sym("r"), sym("n"), sym("k")
+    heath = dict(fidelity="restated", ref="Heath (1908) translation; modern symbols for Euclid's "
+                                          "geometric and proportional statements")
+    no_f77 = ("Sum over a symbolic count: the F77 backend lowers straight-line formulas and "
+              "integrals only")
+    return {
+        "paper": {"id": "euclid300bc", "short": "Euclid c. 300 BC",
+                  "transcription_status": "restated-pending-text"},
+        "symbols": [
+            S("a", "parameter", "Side containing the right angle"),
+            S("b", "parameter", "Other side containing the right angle"),
+            S("c", "parameter", "Side subtending the right angle"),
+            S("A", "parameter", "First number of the continued proportion"),
+            S("r", "parameter", "Common ratio"),
+            S("n", "parameter", "Number of terms before the last"),
+            S("k", "index", "Term index"),
+        ],
+        "formulas": [
+            F("euclid300bc.i47", "Book I, Proposition 47 (the Pythagorean theorem)", "identity",
+              eq(pow_(c, 2), add(pow_(a, 2), pow_(b, 2))), src("I.47", **heath), defines=False,
+              notes="'In right-angled triangles the square on the side subtending the right angle "
+                    "is equal to the squares on the sides containing the right angle.'"),
+            F("euclid300bc.ix35", "Book IX, Proposition 35 (sum of a geometric progression)",
+              "identity",
+              eq(div(sub(mul(A, r), A), A),
+                 div(sub(mul(A, pow_(r, n)), A), _sum(mul(A, pow_(r, k)), "k", 0, sub(n, 1)))),
+              src("IX.35", **heath), defines=False,
+              notes="'As the excess of the second is to the first, so is the excess of the last to "
+                    "all those before it', for the numbers A, Ar, ..., Ar^n."),
+            F("euclid300bc.geometric_sum", "Sum of the first n terms, solved from IX.35",
+              "definition",
+              eq(sym("S_n"), div(mul(A, sub(pow_(r, n), 1)), sub(r, 1))),
+              src("IX.35", fidelity="derived", ref="Solving IX.35 for the sum (r != 1)")),
+        ],
+        "checks": [
+            {"id": "i47-3-4-5", "kind": "compare", "description": "I.47 on the 3-4-5 triangle",
+             "target_ast": pow_(c, 2), "against_ast": add(pow_(a, 2), pow_(b, 2)),
+             "inputs": {"a": 3.0, "b": 4.0, "c": 5.0}, "abs_tol": 0.0},
+            {"id": "ix35-holds", "kind": "compare",
+             "description": "Both sides of IX.35 agree for A = 3, r = 1.5, n = 7",
+             "target_ast": div(sub(mul(A, r), A), A),
+             "against_ast": div(sub(mul(A, pow_(r, n)), A),
+                                _sum(mul(A, pow_(r, k)), "k", 0, sub(n, 1))),
+             "inputs": {"A": 3.0, "r": 1.5, "n": 7}, "rel_tol": 1e-14, "f77": False,
+             "f77_reason": no_f77},
+            {"id": "geometric-sum-closed-form", "kind": "compare",
+             "description": "The closed form solved from IX.35 equals the term-by-term sum",
+             "target": "euclid300bc.geometric_sum",
+             "against_ast": _sum(mul(A, pow_(r, k)), "k", 0, sub(n, 1)),
+             "inputs": {"A": 100.0, "r": 1.05, "n": 30}, "rel_tol": 1e-13, "f77": False,
+             "f77_reason": no_f77},
+        ],
+    }
+
+
+def fibonacci():
+    m = sym("m")
+    return {
+        "paper": {"id": "fibonacci1202", "short": "Fibonacci 1202",
+                  "transcription_status": "restated-pending-text"},
+        "symbols": [
+            S("m", "index", "Months elapsed since the first pair was placed"),
+            S("P", "function", "Pairs of rabbits at the end of month m"),
+        ],
+        "formulas": [
+            F("fibonacci1202.pairs", "The rabbit problem, chapter 12", "definition",
+              eq(apply("P", m), _piecewise(
+                  [(1, _lt(m, 0.5)), (2, _lt(m, 1.5))],
+                  add(apply("P", sub(m, 1)), apply("P", sub(m, 2))))),
+              src("ch. 12", fidelity="restated",
+                  ref="Liber Abaci, 1228 text (Sigler 2002 translation); recurrence in modern "
+                      "symbols"),
+              notes="One pair at the start; each mature pair bears a new pair every month. "
+                    "Fibonacci tabulates 1, 2, 3, 5, 8, ... and reaches 377 pairs at the end of the "
+                    "year. The rule appears in the surviving 1228 revision; whether the lost 1202 "
+                    "text had it cannot be checked."),
+        ],
+        "checks": [
+            {"id": "pairs-after-a-year", "kind": "value",
+             "description": "Fibonacci's answer: 377 pairs at the end of the twelfth month",
+             "target_ast": apply("P", 12), "expected": 377.0, "abs_tol": 0.0, "f77": False,
+             "f77_reason": "recursive definition: the F77 backend lowers straight-line formulas only"},
+            {"id": "pairs-table", "kind": "value",
+             "description": "The fifth entry of his table: 13 pairs at the end of month 5",
+             "target_ast": apply("P", 5), "expected": 13.0, "abs_tol": 0.0, "f77": False,
+             "f77_reason": "recursive definition: the F77 backend lowers straight-line formulas only"},
+        ],
+    }
+
+
+
+PAPERS = [euclid, fibonacci, bachelier, black, heston, bates, sabr, zabr, sidani, alos]
 
 
 # ---------------------------------------------------------------------------

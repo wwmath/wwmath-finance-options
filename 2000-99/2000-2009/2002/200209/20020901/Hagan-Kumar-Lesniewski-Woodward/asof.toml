@@ -23,3 +23,6 @@ role = "SABR dynamics and the Hagan implied-volatility expansion."
 
 [files]
 formulas = "formulas.toml"
+
+[timeline]
+lane = "smile"

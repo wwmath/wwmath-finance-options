@@ -1,0 +1,35 @@
+# As-of record for one work. See research/tools/asof.py.
+
+[work]
+id = "euclid300bc"
+name = "Euclid"
+title = "Elements (Stoicheia)"
+authors = ["Euclid of Alexandria"]
+
+[as_of]
+date = "0300-01-01 BC"
+precision = "circa"
+event = "The Elements compiled in Alexandria, c. 300 BC; no manuscript from Euclid's time survives"
+
+[[later_events]]
+date = "1482-05-25"
+precision = "day"
+event = "First printed edition (Erhard Ratdolt, Venice), Latin translation of Campanus"
+
+[[later_events]]
+date = "1908-01-01"
+precision = "year"
+event = "T. L. Heath, The Thirteen Books of Euclid's Elements (Cambridge University Press); English translation from Heiberg's Greek text (1883-1885)"
+
+[publication]
+venue = "Thirteen books"
+access = "open (public domain translations)"
+landing = "https://mathcs.clarku.edu/~djoyce/java/elements/elements.html"
+notes = "Heath (1908) is public domain; D. E. Joyce's online edition follows it."
+role = "Book I Prop. 47 (the Pythagorean theorem); Book IX Prop. 35 (sum of a geometric progression, the ancestor of annuity formulas)."
+
+[files]
+formulas = "formulas.toml"
+
+[timeline]
+lane = "foundations"

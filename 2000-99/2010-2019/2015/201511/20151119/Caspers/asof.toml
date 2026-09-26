@@ -19,3 +19,6 @@ landing = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2692048"
 access = "free-registration"
 notes = "Written 2013, posted Nov 2015. Re-derives Andreasen-Huge with intermediate steps and checks the numbers against QuantLib."
 role = "Step-by-step ZABR derivation; best source for transcribing the expansions."
+
+[timeline]
+lane = "smile"

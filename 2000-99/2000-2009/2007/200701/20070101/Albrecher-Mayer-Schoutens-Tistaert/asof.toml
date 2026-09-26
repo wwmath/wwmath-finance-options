@@ -20,3 +20,6 @@ role = "Branch-cut-safe form of the Heston characteristic function (used for Bat
 
 [files]
 formulas = "formulas.toml"
+
+[timeline]
+lane = "lognormal"
